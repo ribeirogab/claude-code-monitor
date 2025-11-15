@@ -224,6 +224,15 @@ func removeTimezone(text string) string {
 	return re.ReplaceAllString(text, "")
 }
 
+func getUsageEmoji(percent int) string {
+	if percent <= 60 {
+		return "🟢"
+	} else if percent <= 85 {
+		return "🟡"
+	}
+	return "🔴"
+}
+
 func updateMenuItems() {
 	usage, err := loadUsageData()
 	if err != nil {
@@ -231,34 +240,69 @@ func updateMenuItems() {
 		return
 	}
 
-	if len(menuItems) >= 5 {
-		menuItems[0].SetTitle(fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, removeTimezone(usage.SessionReset)))
-		menuItems[1].SetTitle(fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, removeTimezone(usage.WeekAllReset)))
-		menuItems[2].SetTitle(fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, removeTimezone(usage.WeekOpusReset)))
-		menuItems[4].SetTitle(fmt.Sprintf("Last update: %s", formatTimestamp(usage.Timestamp)))
+	if len(menuItems) >= 8 {
+		// Update Session
+		menuItems[0].SetTitle(fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+		menuItems[1].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
+
+		// Update Week (All)
+		menuItems[2].SetTitle(fmt.Sprintf("Week (All)\t%3d%%\t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+		menuItems[3].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
+
+		// Update Week (Opus)
+		menuItems[4].SetTitle(fmt.Sprintf("Week (Opus)\t%3d%%\t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+		menuItems[5].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
+
+		// Update Last update
+		menuItems[7].SetTitle(fmt.Sprintf("Updated: %s", formatTimestamp(usage.Timestamp)))
 	}
 }
 
 func createMenuItems() {
 	usage, err := loadUsageData()
 
-	var sessionText, weekAllText, weekOpusText, lastUpdateText string
+	var sessionText, sessionResetText string
+	var weekAllText, weekAllResetText string
+	var weekOpusText, weekOpusResetText string
+	var lastUpdateText string
 
 	if err != nil {
-		sessionText = "Session: Loading..."
-		weekAllText = "Week (All): Loading..."
-		weekOpusText = "Week (Opus): Loading..."
-		lastUpdateText = "Last update: N/A"
+		sessionText = "Session    \tLoading..."
+		sessionResetText = "resets: N/A"
+		weekAllText = "Week (All)\tLoading..."
+		weekAllResetText = "resets: N/A"
+		weekOpusText = "Week (Opus)\tLoading..."
+		weekOpusResetText = "resets: N/A"
+		lastUpdateText = "Updated: N/A"
 	} else {
-		sessionText = fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, removeTimezone(usage.SessionReset))
-		weekAllText = fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, removeTimezone(usage.WeekAllReset))
-		weekOpusText = fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, removeTimezone(usage.WeekOpusReset))
-		lastUpdateText = fmt.Sprintf("Last update: %s", formatTimestamp(usage.Timestamp))
+		sessionText = fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
+		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
+		weekAllText = fmt.Sprintf("Week (All)\t%3d%%\t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
+		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
+		weekOpusText = fmt.Sprintf("Week (Opus)\t%3d%%\t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
+		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
+		lastUpdateText = fmt.Sprintf("Updated: %s", formatTimestamp(usage.Timestamp))
 	}
 
+	// Session
 	menuItems = append(menuItems, systray.AddMenuItem(sessionText, ""))
+	sessionResetItem := systray.AddMenuItem(sessionResetText, "")
+	sessionResetItem.Disable()
+	menuItems = append(menuItems, sessionResetItem)
+	systray.AddSeparator()
+
+	// Week (All)
 	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, ""))
+	weekAllResetItem := systray.AddMenuItem(weekAllResetText, "")
+	weekAllResetItem.Disable()
+	menuItems = append(menuItems, weekAllResetItem)
+	systray.AddSeparator()
+
+	// Week (Opus)
 	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, ""))
+	weekOpusResetItem := systray.AddMenuItem(weekOpusResetText, "")
+	weekOpusResetItem.Disable()
+	menuItems = append(menuItems, weekOpusResetItem)
 	systray.AddSeparator()
 
 	lastUpdateItem := systray.AddMenuItem(lastUpdateText, "")
