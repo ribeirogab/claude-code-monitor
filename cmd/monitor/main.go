@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,18 +17,49 @@ var (
 )
 
 func main() {
+	// Setup logging
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logDir := filepath.Join(homeDir, ".claude-code-monitor")
+	os.MkdirAll(logDir, 0755)
+
+	logFile, err := os.OpenFile(
+		filepath.Join(logDir, "monitor.log"),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0644,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+	log.Println("Starting Claude Code Monitor...")
+
+	// Print to console as well
+	fmt.Printf("Claude Code Monitor starting...\n")
+	fmt.Printf("Logs: %s/monitor.log\n", logDir)
+
 	systray.Run(onReady, onExit)
 }
 
 func onReady() {
+	log.Println("onReady() called")
+
 	systray.SetTitle("Claude Monitor")
 	systray.SetTooltip("Claude Code Usage Monitor")
+	log.Println("Title and tooltip set")
 
 	// Set a simple icon (monochrome dot)
 	systray.SetIcon(getIcon())
+	log.Println("Icon set")
 
 	// Add Quit menu item
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+	log.Println("Menu item added")
 
 	// Setup executor and scheduler
 	homeDir, err := os.UserHomeDir()
@@ -36,27 +68,37 @@ func onReady() {
 	}
 
 	scriptPath := findScriptPath()
+	log.Printf("Script path: %s", scriptPath)
+
 	outputDir := filepath.Join(homeDir, ".claude-code-monitor")
+	log.Printf("Output directory: %s", outputDir)
 
 	exec := executor.New(scriptPath, outputDir)
 
 	// Create scheduler with 1-minute interval
 	sched = scheduler.New(time.Minute, exec.Execute)
+	log.Println("Scheduler created")
 
 	// Start scheduler in background
 	go sched.Start()
+	log.Println("Scheduler started")
 
 	// Wait for quit signal
 	go func() {
 		<-mQuit.ClickedCh
+		log.Println("Quit clicked")
 		systray.Quit()
 	}()
+
+	log.Println("Application ready and running")
 }
 
 func onExit() {
+	log.Println("onExit() called")
 	if sched != nil {
 		sched.Stop()
 	}
+	log.Println("Application exited")
 }
 
 func findScriptPath() string {
