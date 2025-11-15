@@ -254,7 +254,7 @@ func updateMenuItems() {
 		menuItems[5].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
 
 		// Update Last update
-		menuItems[7].SetTitle(fmt.Sprintf("Updated: %s", formatTimestamp(usage.Timestamp)))
+		menuItems[7].SetTitle(formatTimestamp(usage.Timestamp))
 	}
 }
 
@@ -273,7 +273,7 @@ func createMenuItems() {
 		weekAllResetText = "resets: N/A"
 		weekOpusText = "Week (Opus)\tLoading..."
 		weekOpusResetText = "resets: N/A"
-		lastUpdateText = "Updated: N/A"
+		lastUpdateText = "N/A"
 	} else {
 		sessionText = fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
@@ -281,7 +281,7 @@ func createMenuItems() {
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
 		weekOpusText = fmt.Sprintf("Week (Opus)\t%3d%%\t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
-		lastUpdateText = fmt.Sprintf("Updated: %s", formatTimestamp(usage.Timestamp))
+		lastUpdateText = formatTimestamp(usage.Timestamp)
 	}
 
 	// Session
