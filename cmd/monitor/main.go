@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/getlantern/systray"
+
 	"github.com/ribeirogab/claude-code-monitor/internal/executor"
 	"github.com/ribeirogab/claude-code-monitor/internal/scheduler"
 )
@@ -25,9 +26,9 @@ type UsageData struct {
 }
 
 var (
-	sched          *scheduler.Scheduler
-	menuItems      []*systray.MenuItem
-	usageDataPath  string
+	sched         *scheduler.Scheduler
+	menuItems     []*systray.MenuItem
+	usageDataPath string
 )
 
 func main() {
@@ -230,8 +231,6 @@ func updateMenuItems() {
 		return
 	}
 
-	// Clear existing menu items (except quit)
-	// Note: systray doesn't support removing items, so we update titles
 	if len(menuItems) >= 5 {
 		menuItems[0].SetTitle(fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, removeTimezone(usage.SessionReset)))
 		menuItems[1].SetTitle(fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, removeTimezone(usage.WeekAllReset)))
@@ -261,6 +260,10 @@ func createMenuItems() {
 	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, ""))
 	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, ""))
 	systray.AddSeparator()
-	menuItems = append(menuItems, systray.AddMenuItem(lastUpdateText, ""))
+
+	lastUpdateItem := systray.AddMenuItem(lastUpdateText, "")
+	lastUpdateItem.Disable()
+	menuItems = append(menuItems, lastUpdateItem)
+
 	systray.AddSeparator()
 }
