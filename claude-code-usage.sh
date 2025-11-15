@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Add common paths where claude CLI might be installed
-export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.npm/bin:/usr/bin:/bin:$PATH"
-
 # Output directory
 OUTPUT_DIR="$HOME/.claude-code-monitor"
 mkdir -p "$OUTPUT_DIR"
@@ -19,10 +16,48 @@ log() {
 
 log "Starting Claude Code usage capture..."
 
+# Find claude CLI in common locations
+CLAUDE_CMD=""
+
+# Try common paths
+SEARCH_PATHS=(
+    "/usr/local/bin/claude"
+    "/opt/homebrew/bin/claude"
+    "$HOME/.npm-global/bin/claude"
+    "$HOME/.npm/bin/claude"
+    "$HOME/.nvm/versions/node/v"*/bin/claude
+)
+
+for path in "${SEARCH_PATHS[@]}"; do
+    # Expand glob patterns
+    for expanded_path in $path; do
+        if [ -x "$expanded_path" ]; then
+            CLAUDE_CMD="$expanded_path"
+            log "Found claude at: $CLAUDE_CMD"
+            break 2
+        fi
+    done
+done
+
+# If not found in common paths, try using 'which' with updated PATH
+if [ -z "$CLAUDE_CMD" ]; then
+    export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.npm/bin:$HOME/.nvm/versions/node/$(ls -1 $HOME/.nvm/versions/node 2>/dev/null | tail -1)/bin:/usr/bin:/bin:$PATH"
+    CLAUDE_CMD=$(which claude 2>/dev/null)
+    if [ -n "$CLAUDE_CMD" ]; then
+        log "Found claude using which: $CLAUDE_CMD"
+    fi
+fi
+
+# If still not found, exit with error
+if [ -z "$CLAUDE_CMD" ]; then
+    log "ERROR: claude CLI not found. Please install it first."
+    exit 1
+fi
+
 # Use expect to automate the interaction
 (
-expect << 'EXPECT_END'
-spawn claude /usage
+expect << EXPECT_END
+spawn $CLAUDE_CMD /usage
 
 # Wait for usage screen to load completely
 sleep 5
