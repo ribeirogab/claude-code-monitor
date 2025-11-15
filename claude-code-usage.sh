@@ -23,7 +23,7 @@ if ! command -v jq &> /dev/null; then
     # Check if brew is available
     if command -v brew &> /dev/null; then
         log "Installing jq with Homebrew..."
-        if brew install jq &>> "$EXEC_LOG"; then
+        if brew install jq >> "$EXEC_LOG" 2>&1; then
             log "jq installed successfully"
         else
             log "ERROR: Failed to install jq with Homebrew"
