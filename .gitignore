@@ -5,3 +5,4 @@ claude-code-usage*.json
 # Build artifacts
 build/
 *.app
+*.zip
