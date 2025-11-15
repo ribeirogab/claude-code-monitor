@@ -62,7 +62,23 @@ log "Updated PATH to include: $CLAUDE_DIR"
 # Use expect to automate the interaction
 (
 expect << EXPECT_END
+set timeout 30
 spawn $CLAUDE_CMD /usage
+
+# Wait a bit for initial prompt
+sleep 1
+
+# Check if trust prompt appears and confirm it
+expect {
+    "Do you trust the files in this folder?" {
+        # Press Enter to confirm (Yes, proceed is already selected)
+        send "\r"
+        sleep 1
+    }
+    timeout {
+        # No trust prompt, continue
+    }
+}
 
 # Wait for usage screen to load completely
 sleep 5
