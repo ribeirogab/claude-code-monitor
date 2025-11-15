@@ -4,7 +4,8 @@ BUNDLE_NAME="ClaudeCodeMonitor.app"
 BINARY_PATH="build/claude-code-monitor"
 SCRIPT_PATH="claude-code-usage.sh"
 INFO_PLIST_PATH="assets/Info.plist"
-ICON_PATH="assets/icons/menubar-icon.png"
+MENUBAR_ICON_PATH="assets/icons/menubar-icon.png"
+APP_ICON_PATH="assets/icons/app-icon.icns"
 
 # Create app bundle structure
 mkdir -p "${BUNDLE_NAME}/Contents/MacOS"
@@ -21,8 +22,11 @@ chmod +x "${BUNDLE_NAME}/Contents/MacOS/${SCRIPT_PATH}"
 # Copy Info.plist
 cp "${INFO_PLIST_PATH}" "${BUNDLE_NAME}/Contents/Info.plist"
 
-# Copy icon
-cp "${ICON_PATH}" "${BUNDLE_NAME}/Contents/Resources/assets/icons/menubar-icon.png"
+# Copy menubar icon
+cp "${MENUBAR_ICON_PATH}" "${BUNDLE_NAME}/Contents/Resources/assets/icons/menubar-icon.png"
+
+# Copy app icon
+cp "${APP_ICON_PATH}" "${BUNDLE_NAME}/Contents/Resources/app-icon.icns"
 
 echo "App bundle created: ${BUNDLE_NAME}"
 echo "To run: open ${BUNDLE_NAME}"
