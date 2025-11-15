@@ -1,5 +1,6 @@
 claude-code-usage*.log
 claude-code-usage*.json
+monitor.log
 .DS_Store
 
 # Build artifacts
