@@ -18,6 +18,8 @@
     <string>APPL</string>
     <key>CFBundleIconFile</key>
     <string>app-icon</string>
+    <key>LSUIElement</key>
+    <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
 </dict>
