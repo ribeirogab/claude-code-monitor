@@ -257,10 +257,10 @@ func createMenuItems() {
 		lastUpdateText = fmt.Sprintf("Last update: %s", formatTimestamp(usage.Timestamp))
 	}
 
-	menuItems = append(menuItems, systray.AddMenuItem(sessionText, "Current session usage"))
-	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, "Weekly usage (all models)"))
-	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, "Weekly usage (Opus model)"))
+	menuItems = append(menuItems, systray.AddMenuItem(sessionText, ""))
+	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, ""))
+	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, ""))
 	systray.AddSeparator()
-	menuItems = append(menuItems, systray.AddMenuItem(lastUpdateText, "Last data update"))
+	menuItems = append(menuItems, systray.AddMenuItem(lastUpdateText, ""))
 	systray.AddSeparator()
 }
