@@ -54,6 +54,11 @@ if [ -z "$CLAUDE_CMD" ]; then
     exit 1
 fi
 
+# Export PATH to include the directory where claude (and node) is located
+CLAUDE_DIR=$(dirname "$CLAUDE_CMD")
+export PATH="$CLAUDE_DIR:$PATH"
+log "Updated PATH to include: $CLAUDE_DIR"
+
 # Use expect to automate the interaction
 (
 expect << EXPECT_END
