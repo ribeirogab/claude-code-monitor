@@ -16,11 +16,25 @@ log() {
 
 log "Starting Claude Code usage capture..."
 
-# Check if jq is installed
+# Check if jq is installed, install if missing
 if ! command -v jq &> /dev/null; then
-    log "ERROR: jq is required but not installed."
-    log "Install with: brew install jq"
-    exit 1
+    log "jq not found, attempting to install..."
+
+    # Check if brew is available
+    if command -v brew &> /dev/null; then
+        log "Installing jq with Homebrew..."
+        if brew install jq &>> "$EXEC_LOG"; then
+            log "jq installed successfully"
+        else
+            log "ERROR: Failed to install jq with Homebrew"
+            exit 1
+        fi
+    else
+        log "ERROR: jq is required but not installed, and Homebrew is not available."
+        log "Install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        log "Or install jq manually: brew install jq"
+        exit 1
+    fi
 fi
 
 # Check if .claude.json exists
