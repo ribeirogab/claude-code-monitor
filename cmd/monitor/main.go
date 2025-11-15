@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/getlantern/systray"
@@ -211,7 +212,15 @@ func formatTimestamp(timestamp string) string {
 		return "Unknown"
 	}
 
-	return t.Format("Jan 2 at 3:04pm")
+	// Convert to local timezone
+	local := t.Local()
+	return local.Format("Jan 2 at 3:04pm")
+}
+
+func removeTimezone(text string) string {
+	// Remove timezone like "(America/Sao_Paulo)" from text
+	re := regexp.MustCompile(`\s*\([^)]+\)`)
+	return re.ReplaceAllString(text, "")
 }
 
 func updateMenuItems() {
@@ -223,10 +232,10 @@ func updateMenuItems() {
 
 	// Clear existing menu items (except quit)
 	// Note: systray doesn't support removing items, so we update titles
-	if len(menuItems) >= 6 {
-		menuItems[0].SetTitle(fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, usage.SessionReset))
-		menuItems[1].SetTitle(fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, usage.WeekAllReset))
-		menuItems[2].SetTitle(fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, usage.WeekOpusReset))
+	if len(menuItems) >= 5 {
+		menuItems[0].SetTitle(fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, removeTimezone(usage.SessionReset)))
+		menuItems[1].SetTitle(fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, removeTimezone(usage.WeekAllReset)))
+		menuItems[2].SetTitle(fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, removeTimezone(usage.WeekOpusReset)))
 		menuItems[4].SetTitle(fmt.Sprintf("Last update: %s", formatTimestamp(usage.Timestamp)))
 	}
 }
@@ -242,21 +251,16 @@ func createMenuItems() {
 		weekOpusText = "Week (Opus): Loading..."
 		lastUpdateText = "Last update: N/A"
 	} else {
-		sessionText = fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, usage.SessionReset)
-		weekAllText = fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, usage.WeekAllReset)
-		weekOpusText = fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, usage.WeekOpusReset)
+		sessionText = fmt.Sprintf("Session: %d%% (resets %s)", usage.SessionPercent, removeTimezone(usage.SessionReset))
+		weekAllText = fmt.Sprintf("Week (All): %d%% (resets %s)", usage.WeekAllPercent, removeTimezone(usage.WeekAllReset))
+		weekOpusText = fmt.Sprintf("Week (Opus): %d%% (resets %s)", usage.WeekOpusPercent, removeTimezone(usage.WeekOpusReset))
 		lastUpdateText = fmt.Sprintf("Last update: %s", formatTimestamp(usage.Timestamp))
 	}
 
 	menuItems = append(menuItems, systray.AddMenuItem(sessionText, "Current session usage"))
 	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, "Weekly usage (all models)"))
 	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, "Weekly usage (Opus model)"))
-	menuItems = append(menuItems, systray.AddMenuItemCheckbox("─────────────────────", "", false))
+	systray.AddSeparator()
 	menuItems = append(menuItems, systray.AddMenuItem(lastUpdateText, "Last data update"))
-	menuItems = append(menuItems, systray.AddMenuItemCheckbox("─────────────────────", "", false))
-
-	// Disable all info items (make them non-clickable)
-	for i := 0; i < len(menuItems); i++ {
-		menuItems[i].Disable()
-	}
+	systray.AddSeparator()
 }
