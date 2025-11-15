@@ -1,4 +1,4 @@
-.PHONY: help run build build-intel build-arm build-universal app clean install
+.PHONY: help run build build-intel build-arm build-universal app app-intel app-universal clean install
 
 APP_NAME := claude-code-monitor
 BUILD_DIR := build
@@ -12,7 +12,9 @@ help:
 	@echo "  make build-intel      - Build for Intel (amd64)"
 	@echo "  make build-arm        - Build for Apple Silicon (arm64)"
 	@echo "  make build-universal  - Build universal binary (Intel + Apple Silicon)"
-	@echo "  make app              - Create macOS app bundle (.app)"
+	@echo "  make app              - Create macOS app bundle for current architecture"
+	@echo "  make app-intel        - Create macOS app bundle for Intel only"
+	@echo "  make app-universal    - Create macOS app bundle with universal binary"
 	@echo "  make clean            - Remove build artifacts"
 	@echo "  make install          - Install to /usr/local/bin"
 	@echo "  make help             - Show this help message"
@@ -49,6 +51,20 @@ app: build
 	@echo "Creating macOS app bundle..."
 	@./scripts/create-app-bundle.sh
 	@echo "App bundle created: $(BUNDLE_NAME)"
+	@echo "To run: open $(BUNDLE_NAME)"
+
+app-intel: build-intel
+	@echo "Creating macOS app bundle for Intel..."
+	@cp $(BUILD_DIR)/$(APP_NAME)-amd64 $(BUILD_DIR)/$(APP_NAME)
+	@./scripts/create-app-bundle.sh
+	@rm $(BUILD_DIR)/$(APP_NAME)
+	@echo "App bundle created: $(BUNDLE_NAME) (Intel only)"
+	@echo "To run: open $(BUNDLE_NAME)"
+
+app-universal: build-universal
+	@echo "Creating macOS app bundle with universal binary..."
+	@./scripts/create-app-bundle.sh
+	@echo "App bundle created: $(BUNDLE_NAME) (Universal - Intel + Apple Silicon)"
 	@echo "To run: open $(BUNDLE_NAME)"
 
 clean:

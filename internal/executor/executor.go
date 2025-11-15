@@ -31,10 +31,6 @@ func (e *Executor) Execute() error {
 		return fmt.Errorf("failed to run script: %w", err)
 	}
 
-	if err := e.moveOutputFiles(); err != nil {
-		return fmt.Errorf("failed to move output files: %w", err)
-	}
-
 	return nil
 }
 
@@ -54,43 +50,4 @@ func (e *Executor) runScript() error {
 	}
 
 	return nil
-}
-
-// moveOutputFiles moves the generated files to the output directory
-func (e *Executor) moveOutputFiles() error {
-	scriptDir := filepath.Dir(e.scriptPath)
-	files := []string{
-		"claude-code-usage.log",
-		"claude-code-usage.json",
-		"claude-code-usage-execution.log",
-	}
-
-	for _, file := range files {
-		src := filepath.Join(scriptDir, file)
-		dst := filepath.Join(e.outputDir, file)
-
-		if err := e.moveFile(src, dst); err != nil {
-			return fmt.Errorf("failed to move %s: %w", file, err)
-		}
-	}
-
-	return nil
-}
-
-// moveFile moves a file from src to dst
-func (e *Executor) moveFile(src, dst string) error {
-	if _, err := os.Stat(src); os.IsNotExist(err) {
-		return nil
-	}
-
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(dst, data, 0644); err != nil {
-		return err
-	}
-
-	return os.Remove(src)
 }
