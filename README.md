@@ -161,12 +161,3 @@ make help
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Acknowledgments
-
-- Built with [systray](https://github.com/getlantern/systray) for menu bar integration
-- Monitors [Claude Code CLI](https://code.claude.com/) usage
