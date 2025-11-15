@@ -23,12 +23,14 @@ A macOS menu bar application that automatically monitors Claude Code CLI usage a
 ### Using Make (Recommended)
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/ribeirogab/claude-code-monitor.git
 cd claude-code-monitor
 ```
 
 2. Build and install:
+
 ```bash
 make install
 ```
@@ -36,6 +38,7 @@ make install
 This will create a universal binary that works on both Intel and Apple Silicon Macs and install it to `/usr/local/bin/`.
 
 3. Run the application:
+
 ```bash
 claude-code-monitor
 ```
@@ -43,12 +46,14 @@ claude-code-monitor
 ### Manual Build
 
 Build for your current architecture:
+
 ```bash
 make build
 ./build/claude-code-monitor
 ```
 
 Build for specific architectures:
+
 ```bash
 # Intel only
 make build-intel
@@ -90,16 +95,19 @@ The `claude-code-usage.json` file contains:
 ## Development
 
 Run in development mode:
+
 ```bash
 make run
 ```
 
 Clean build artifacts:
+
 ```bash
 make clean
 ```
 
 Show all available commands:
+
 ```bash
 make help
 ```
@@ -138,15 +146,18 @@ make help
 ## Troubleshooting
 
 **Application doesn't start:**
+
 - Ensure `claude-code-usage.sh` is in the same directory as the binary
 - Check that Claude Code CLI is installed and accessible
 
 **No data being generated:**
+
 - Verify that Claude Code CLI is properly configured
 - Check logs in `~/.claude-code-monitor/claude-code-usage-execution.log`
 - Ensure `expect` is installed (run `which expect`)
 
 **Menu bar icon not showing:**
+
 - This is a known limitation of some macOS versions
 - The app is still running - check Activity Monitor for `claude-code-monitor`
 
