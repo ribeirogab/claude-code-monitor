@@ -1,8 +1,9 @@
-.PHONY: help run build build-intel build-arm build-universal clean install
+.PHONY: help run build build-intel build-arm build-universal app clean install
 
 APP_NAME := claude-code-monitor
 BUILD_DIR := build
 CMD_DIR := cmd/monitor
+BUNDLE_NAME := ClaudeCodeMonitor.app
 
 help:
 	@echo "Available targets:"
@@ -11,6 +12,7 @@ help:
 	@echo "  make build-intel      - Build for Intel (amd64)"
 	@echo "  make build-arm        - Build for Apple Silicon (arm64)"
 	@echo "  make build-universal  - Build universal binary (Intel + Apple Silicon)"
+	@echo "  make app              - Create macOS app bundle (.app)"
 	@echo "  make clean            - Remove build artifacts"
 	@echo "  make install          - Install to /usr/local/bin"
 	@echo "  make help             - Show this help message"
@@ -28,13 +30,13 @@ build:
 build-intel:
 	@echo "Building $(APP_NAME) for Intel (amd64)..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-amd64 $(CMD_DIR)/main.go
+	@CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-amd64 $(CMD_DIR)/main.go
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)-amd64"
 
 build-arm:
 	@echo "Building $(APP_NAME) for Apple Silicon (arm64)..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-arm64 $(CMD_DIR)/main.go
+	@CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-arm64 $(CMD_DIR)/main.go
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)-arm64"
 
 build-universal: build-intel build-arm
@@ -43,9 +45,16 @@ build-universal: build-intel build-arm
 	@rm $(BUILD_DIR)/$(APP_NAME)-amd64 $(BUILD_DIR)/$(APP_NAME)-arm64
 	@echo "Universal binary created: $(BUILD_DIR)/$(APP_NAME)"
 
+app: build
+	@echo "Creating macOS app bundle..."
+	@./scripts/create-app-bundle.sh
+	@echo "App bundle created: $(BUNDLE_NAME)"
+	@echo "To run: open $(BUNDLE_NAME)"
+
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR)
+	@rm -rf $(BUNDLE_NAME)
 	@echo "Clean complete"
 
 install: build-universal

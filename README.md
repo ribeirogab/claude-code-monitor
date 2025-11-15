@@ -20,50 +20,47 @@ A macOS menu bar application that automatically monitors Claude Code CLI usage a
 
 ## Installation
 
-### Using Make (Recommended)
+### For End Users (macOS App)
 
-1. Clone the repository:
+1. Download `ClaudeCodeMonitor.app` from releases
+2. Move it to `/Applications` folder
+3. Double-click to open
+4. The app icon will appear in your menubar
+
+### For Developers
+
+#### Generate .app for Distribution
 
 ```bash
 git clone https://github.com/ribeirogab/claude-code-monitor.git
 cd claude-code-monitor
+make app
 ```
 
-2. Build and install:
+This creates `ClaudeCodeMonitor.app` ready for distribution.
+
+#### Install from Source
 
 ```bash
 make install
 ```
 
-This will create a universal binary that works on both Intel and Apple Silicon Macs and install it to `/usr/local/bin/`.
+This installs the binary to `/usr/local/bin/`.
 
-3. Run the application:
-
-```bash
-claude-code-monitor
-```
-
-### Manual Build
-
-Build for your current architecture:
+#### Build for Specific Architectures
 
 ```bash
+# Current architecture
 make build
-./build/claude-code-monitor
-```
 
-Build for specific architectures:
-
-```bash
 # Intel only
 make build-intel
 
 # Apple Silicon only
 make build-arm
-
-# Universal binary (both architectures)
-make build-universal
 ```
+
+Note: Cross-compilation requires CGO toolchains. Use `make app` to build for current architecture.
 
 ## Usage
 
