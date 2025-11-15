@@ -16,6 +16,56 @@ log() {
 
 log "Starting Claude Code usage capture..."
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    log "ERROR: jq is required but not installed."
+    log "Install with: brew install jq"
+    exit 1
+fi
+
+# Check if .claude.json exists
+CLAUDE_CONFIG="$HOME/.claude.json"
+if [ ! -f "$CLAUDE_CONFIG" ]; then
+    log "ERROR: ~/.claude.json not found."
+    log "Run 'claude' at least once to initialize configuration."
+    exit 1
+fi
+
+# Get current script directory
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+log "Script running from: $SCRIPT_DIR"
+
+# Backup .claude.json
+cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.bak"
+log "Backed up .claude.json to .claude.json.bak"
+
+# Add current directory to trusted projects
+log "Adding $SCRIPT_DIR to trusted directories..."
+jq --arg dir "$SCRIPT_DIR" '
+  .projects[$dir] = {
+    "allowedTools": [],
+    "mcpContextUris": [],
+    "mcpServers": {},
+    "enabledMcpjsonServers": [],
+    "disabledMcpjsonServers": [],
+    "hasTrustDialogAccepted": true,
+    "projectOnboardingSeenCount": 0,
+    "hasClaudeMdExternalIncludesApproved": false,
+    "hasClaudeMdExternalIncludesWarningShown": false,
+    "exampleFiles": []
+  }' "$CLAUDE_CONFIG" > "$CLAUDE_CONFIG.tmp"
+
+# Validate the temporary file is valid JSON
+if ! jq empty "$CLAUDE_CONFIG.tmp" 2>/dev/null; then
+    log "ERROR: Failed to update .claude.json - invalid JSON generated"
+    rm "$CLAUDE_CONFIG.tmp"
+    exit 1
+fi
+
+# Move temp file to original
+mv "$CLAUDE_CONFIG.tmp" "$CLAUDE_CONFIG"
+log "Successfully added $SCRIPT_DIR to trusted directories"
+
 # Find claude CLI in common locations
 CLAUDE_CMD=""
 
