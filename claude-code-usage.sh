@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Add common paths where claude CLI might be installed
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.npm-global/bin:$HOME/.npm/bin:/usr/bin:/bin:$PATH"
+
 # Execution log file
 EXEC_LOG="claude-code-usage-execution.log"
 
