@@ -1,2 +1,5 @@
 claude-code-usage*.log
 claude-code-usage*.json
+
+# Build artifacts
+build/
