@@ -49,13 +49,17 @@ func main() {
 func onReady() {
 	log.Println("onReady() called")
 
-	systray.SetTitle("Claude Monitor")
-	systray.SetTooltip("Claude Code Usage Monitor")
-	log.Println("Title and tooltip set")
+	// Load and set icon
+	iconData, err := loadIcon()
+	if err == nil {
+		systray.SetIcon(iconData)
+		log.Println("Icon loaded and set")
+	} else {
+		systray.SetTitle("claude-code")
+		log.Printf("Icon not found, using title. Error: %v", err)
+	}
 
-	// Set a simple icon (monochrome dot)
-	systray.SetIcon(getIcon())
-	log.Println("Icon set")
+	systray.SetTooltip("Claude Code Usage Monitor")
 
 	// Add Quit menu item
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")
@@ -132,18 +136,29 @@ func findScriptPath() string {
 	return ""
 }
 
-func getIcon() []byte {
-	// Simple monochrome icon (8x8 black dot)
-	return []byte{
-		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
-		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-		0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0xf3, 0xff, 0x61, 0x00, 0x00, 0x00,
-		0x19, 0x74, 0x45, 0x58, 0x74, 0x53, 0x6f, 0x66, 0x74, 0x77, 0x61, 0x72,
-		0x65, 0x00, 0x41, 0x64, 0x6f, 0x62, 0x65, 0x20, 0x49, 0x6d, 0x61, 0x67,
-		0x65, 0x52, 0x65, 0x61, 0x64, 0x79, 0x71, 0xc9, 0x65, 0x3c, 0x00, 0x00,
-		0x00, 0x18, 0x49, 0x44, 0x41, 0x54, 0x78, 0xda, 0x62, 0x60, 0x18, 0x05,
-		0xa3, 0x60, 0x14, 0x8c, 0x02, 0x08, 0x00, 0x00, 0x04, 0x10, 0x00, 0x01,
-		0x27, 0x28, 0x4d, 0x4e, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44,
-		0xae, 0x42, 0x60, 0x82,
+func loadIcon() ([]byte, error) {
+	// Try multiple paths for icon (dev mode and app bundle)
+	paths := []string{
+		"assets/icons/menubar-icon.png",
+		"../Resources/assets/icons/menubar-icon.png",
 	}
+
+	// Add path relative to executable
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		paths = append(paths,
+			filepath.Join(exeDir, "..", "Resources", "assets", "icons", "menubar-icon.png"),
+			filepath.Join(exeDir, "assets", "icons", "menubar-icon.png"),
+		)
+	}
+
+	// Try each path
+	for _, path := range paths {
+		if data, err := os.ReadFile(path); err == nil {
+			log.Printf("Icon loaded from: %s", path)
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("icon file not found in any expected location")
 }
