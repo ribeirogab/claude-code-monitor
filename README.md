@@ -62,9 +62,9 @@ This app is not signed with an Apple Developer certificate (which costs $99/year
 
 **This is expected and safe** - you can review the complete source code in this repository to verify there's no malware.
 
-**Video Tutorial:**
+**Installation Tutorial:**
 
-![Installation Tutorial](.github/installation.mp4)
+![Installation Tutorial](.github/installation.gif)
 
 Note: The DMG includes a universal binary that works on both Intel and Apple Silicon Macs.
 
@@ -217,6 +217,14 @@ make help
 - Check that Claude Code CLI is installed and accessible: `which claude`
 - Verify Homebrew is installed (for auto-installing jq): `which brew`
 - Check application logs in `~/.claude-code-monitor/monitor.log`
+
+**Application won't quit:**
+
+If the app doesn't close properly (e.g., when a script is running), force quit it:
+
+```bash
+killall claude-code-monitor
+```
 
 **No data being generated:**
 
