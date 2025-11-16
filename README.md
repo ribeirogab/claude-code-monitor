@@ -42,26 +42,25 @@ Note: The app will automatically install `jq` and `expect` via Homebrew if not f
 
 ### For End Users (Recommended)
 
+**Installation Steps:**
+
 1. Download `ClaudeCodeMonitor-1.0.0.dmg` from releases
 2. Double-click the DMG file to open it
 3. Drag `ClaudeCodeMonitor.app` to the Applications folder
 4. Eject the DMG
-5. Open ClaudeCodeMonitor from Applications
-6. The app icon will appear in your menubar
+5. Try to open ClaudeCodeMonitor from Applications
+   - **You will see a security warning** - this is expected (see below)
+6. Go to **System Settings** > **Privacy & Security**
+7. Scroll down to the **Security** section
+8. Click **"Open Anyway"** next to the message about ClaudeCodeMonitor
+9. Click **"Open"** in the confirmation dialog
+10. The app icon will appear in your menubar
 
-**Important Security Note:**
+**Why the security warning?**
 
-This app is not signed with an Apple Developer certificate (which costs $99/year). When you first try to open the app, macOS will show a security warning saying it "can't be opened because Apple cannot check it for malicious software."
+This app is not signed with an Apple Developer certificate (which costs $99/year). macOS will show a warning saying it "can't be opened because Apple cannot check it for malicious software."
 
 **This is expected and safe** - you can review the complete source code in this repository to verify there's no malware.
-
-To open the app:
-
-1. Try to open the app (you'll see the security warning)
-2. Go to **System Settings** > **Privacy & Security**
-3. Scroll down to the **Security** section
-4. Click **"Open Anyway"** next to the message about ClaudeCodeMonitor
-5. Click **"Open"** in the confirmation dialog
 
 **Video Tutorial:**
 
