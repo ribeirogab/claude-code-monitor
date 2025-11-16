@@ -4,7 +4,7 @@ set -e
 
 APP_NAME="ClaudeCodeMonitor"
 DMG_NAME="ClaudeCodeMonitor"
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 # Paths
 DIST_DIR="dist"
