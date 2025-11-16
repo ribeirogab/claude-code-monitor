@@ -108,6 +108,7 @@ CLAUDE_CMD=""
 SEARCH_PATHS=(
     "/usr/local/bin/claude"
     "/opt/homebrew/bin/claude"
+    "$HOME/.local/bin/claude"
     "$HOME/.npm-global/bin/claude"
     "$HOME/.npm/bin/claude"
     "$HOME/.nvm/versions/node/v"*/bin/claude
