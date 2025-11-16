@@ -242,15 +242,15 @@ func updateMenuItems() {
 
 	if len(menuItems) >= 7 {
 		// Update Session
-		menuItems[0].SetTitle(fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+		menuItems[0].SetTitle(fmt.Sprintf("Session    \t%02d%% \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
 		menuItems[1].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
 
 		// Update Week (All)
-		menuItems[2].SetTitle(fmt.Sprintf("Week (All)\t%3d%%\t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+		menuItems[2].SetTitle(fmt.Sprintf("Week (All)\t%02d%% \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
 		menuItems[3].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
 
 		// Update Week (Opus)
-		menuItems[4].SetTitle(fmt.Sprintf("Week (Opus)\t%3d%%\t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+		menuItems[4].SetTitle(fmt.Sprintf("Week (Opus)\t%02d%% \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
 		menuItems[5].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
 
 		// Update Last update
@@ -275,11 +275,11 @@ func createMenuItems() {
 		weekOpusResetText = "resets: N/A"
 		lastUpdateText = "N/A"
 	} else {
-		sessionText = fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
+		sessionText = fmt.Sprintf("Session    \t%02d%% \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
-		weekAllText = fmt.Sprintf("Week (All)\t%3d%%\t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
+		weekAllText = fmt.Sprintf("Week (All)\t%02d%% \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
-		weekOpusText = fmt.Sprintf("Week (Opus)\t%3d%%\t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
+		weekOpusText = fmt.Sprintf("Week (Opus)\t%02d%% \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
 		lastUpdateText = formatTimestamp(usage.Timestamp)
 	}
