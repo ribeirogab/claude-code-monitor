@@ -134,7 +134,7 @@ make help
 
 ## Project Structure
 
-```
+```plaintext
 .
 ├── cmd/
 │   └── monitor/          # Main application entry point
