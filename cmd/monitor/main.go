@@ -240,7 +240,7 @@ func updateMenuItems() {
 		return
 	}
 
-	if len(menuItems) >= 8 {
+	if len(menuItems) >= 7 {
 		// Update Session
 		menuItems[0].SetTitle(fmt.Sprintf("Session    \t%3d%%\t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
 		menuItems[1].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
@@ -254,7 +254,7 @@ func updateMenuItems() {
 		menuItems[5].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
 
 		// Update Last update
-		menuItems[7].SetTitle(formatTimestamp(usage.Timestamp))
+		menuItems[6].SetTitle(formatTimestamp(usage.Timestamp))
 	}
 }
 
