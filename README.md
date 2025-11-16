@@ -21,11 +21,10 @@ A macOS menu bar application that monitors and displays Claude Code CLI usage st
 
 - macOS (Intel or Apple Silicon)
 - [Claude Code CLI](https://code.claude.com/) installed and configured
-- `expect` command-line tool (pre-installed on macOS)
-- Homebrew (for auto-installing jq if needed)
+- Homebrew (for auto-installing dependencies)
 - Go 1.16+ (for building from source)
 
-Note: The app will automatically install `jq` via Homebrew if not found, and will auto-detect Claude CLI location even in NVM installations.
+Note: The app will automatically install `jq` and `expect` via Homebrew if not found, and will auto-detect Claude CLI location even in NVM installations.
 
 ## Installation
 
@@ -103,13 +102,13 @@ The `claude-code-usage.json` file contains:
 
 ```json
 {
-  "session_percent": 10,
-  "session_reset": "in 2 hours",
-  "week_all_percent": 25,
-  "week_all_reset": "in 5 days",
-  "week_opus_percent": 15,
-  "week_opus_reset": "in 5 days",
-  "timestamp": "2025-11-15T10:30:00Z"
+  "session_percent": 40,
+  "session_reset": "10pm (America/Sao_Paulo)",
+  "week_all_percent": 19,
+  "week_all_reset": "Nov 21 at 9pm (America/Sao_Paulo)",
+  "week_opus_percent": 23,
+  "week_opus_reset": "Nov 21 at 9pm (America/Sao_Paulo)",
+  "timestamp": "2025-11-16T00:26:20Z"
 }
 ```
 
@@ -182,8 +181,8 @@ make help
 
 - Verify that Claude Code CLI is properly configured
 - Check logs in `~/.claude-code-monitor/claude-code-usage-execution.log`
-- Ensure `expect` is installed (pre-installed on macOS): `which expect`
 - If using NVM, ensure Node.js is properly installed
+- Verify Homebrew is working: `brew --version`
 
 **Menu not updating:**
 

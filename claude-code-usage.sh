@@ -37,6 +37,27 @@ if ! command -v jq &> /dev/null; then
     fi
 fi
 
+# Check if expect is installed, install if missing
+if ! command -v expect &> /dev/null; then
+    log "expect not found, attempting to install..."
+
+    # Check if brew is available
+    if command -v brew &> /dev/null; then
+        log "Installing expect with Homebrew..."
+        if brew install expect >> "$EXEC_LOG" 2>&1; then
+            log "expect installed successfully"
+        else
+            log "ERROR: Failed to install expect with Homebrew"
+            exit 1
+        fi
+    else
+        log "ERROR: expect is required but not installed, and Homebrew is not available."
+        log "Install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        log "Or install expect manually: brew install expect"
+        exit 1
+    fi
+fi
+
 # Check if .claude.json exists
 CLAUDE_CONFIG="$HOME/.claude.json"
 if [ ! -f "$CLAUDE_CONFIG" ]; then
