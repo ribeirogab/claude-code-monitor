@@ -9,7 +9,6 @@ VERSION="1.0.0"
 # Paths
 DIST_DIR="dist"
 APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
-DMG_DIR="dmg-build"
 DMG_FILE="${DIST_DIR}/${DMG_NAME}-${VERSION}.dmg"
 
 # Check if app bundle exists
@@ -20,32 +19,43 @@ fi
 
 echo "Creating DMG installer..."
 
-# Clean up previous build
-rm -rf "$DMG_DIR"
+# Check if create-dmg is installed, install if missing
+if ! command -v create-dmg &> /dev/null; then
+    echo "create-dmg not found, attempting to install..."
+
+    if command -v brew &> /dev/null; then
+        echo "Installing create-dmg with Homebrew..."
+        if brew install create-dmg > /dev/null 2>&1; then
+            echo "create-dmg installed successfully"
+        else
+            echo "ERROR: Failed to install create-dmg with Homebrew"
+            exit 1
+        fi
+    else
+        echo "ERROR: create-dmg is required but not installed, and Homebrew is not available."
+        echo "Install Homebrew first or install create-dmg manually: brew install create-dmg"
+        exit 1
+    fi
+fi
+
+# Clean up previous DMG
 rm -f "$DMG_FILE"
 
-# Create temporary directory
-mkdir -p "$DMG_DIR"
-
-# Copy app bundle
-echo "Copying app bundle..."
-cp -R "$APP_BUNDLE" "$DMG_DIR/"
-
-# Create Applications symlink for easy installation
-echo "Creating Applications symlink..."
-ln -s /Applications "$DMG_DIR/Applications"
-
-# Create DMG
-echo "Creating DMG file..."
-hdiutil create -volname "$DMG_NAME" \
-    -srcfolder "$DMG_DIR" \
-    -ov \
-    -format UDZO \
-    "$DMG_FILE"
-
-# Clean up
-echo "Cleaning up..."
-rm -rf "$DMG_DIR"
+# Create DMG with create-dmg (much prettier than hdiutil)
+echo "Creating DMG file with custom styling..."
+create-dmg \
+    --volname "$DMG_NAME" \
+    --volicon "assets/icons/app-icon.icns" \
+    --window-pos 200 120 \
+    --window-size 600 400 \
+    --icon-size 100 \
+    --icon "$APP_NAME.app" 150 150 \
+    --hide-extension "$APP_NAME.app" \
+    --app-drop-link 450 150 \
+    --no-internet-enable \
+    "$DMG_FILE" \
+    "$APP_BUNDLE" \
+    > /dev/null 2>&1
 
 echo ""
 echo "========================================="
