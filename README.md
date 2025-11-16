@@ -64,13 +64,7 @@ This app is not signed with an Apple Developer certificate (which costs $99/year
 
 **Video Tutorial:**
 
-<video src="https://github.com/ribeirogab/claude-code-monitor/raw/main/.github/installation.mp4" controls width="600"></video>
-
-<details>
-<summary>Can't see the video? Click here for alternative link</summary>
-
-[Download installation.mp4](.github/installation.mp4)
-</details>
+![Installation Tutorial](.github/installation.mp4)
 
 Note: The DMG includes a universal binary that works on both Intel and Apple Silicon Macs.
 
