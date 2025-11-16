@@ -27,7 +27,7 @@ run:
 	@echo "Running $(APP_NAME)..."
 	@go run $(CMD_DIR)/main.go
 
-dev: build
+dev: clean build
 	@echo "Killing existing instances..."
 	@killall $(APP_NAME) 2>/dev/null || true
 	@echo "Starting $(APP_NAME)..."
