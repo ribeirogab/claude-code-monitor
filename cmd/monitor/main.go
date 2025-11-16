@@ -112,13 +112,13 @@ func onReady() {
 	log.Println("Usage menu items created")
 
 	// Add control menu items
-	mUpdateNow = systray.AddMenuItem("Update Now", "Manually update usage data")
+	mUpdateNow = systray.AddMenuItem("Update Now", "")
 
 	autoUpdateText := "Disable Auto-Update"
 	if !appConfig.AutoUpdateEnabled {
 		autoUpdateText = "Enable Auto-Update"
 	}
-	mAutoUpdate = systray.AddMenuItem(autoUpdateText, "Toggle automatic updates")
+	mAutoUpdate = systray.AddMenuItem(autoUpdateText, "")
 
 	systray.AddSeparator()
 
@@ -161,9 +161,15 @@ func onReady() {
 	go func() {
 		for range mUpdateNow.ClickedCh {
 			log.Println("Manual update triggered")
+			mUpdateNow.SetTitle("Updating...")
+			mUpdateNow.Disable()
+
 			if err := taskWithUpdate(); err != nil {
 				log.Printf("Manual update failed: %v", err)
 			}
+
+			mUpdateNow.Enable()
+			mUpdateNow.SetTitle("Update Now")
 		}
 	}()
 
