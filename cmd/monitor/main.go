@@ -37,12 +37,16 @@ type MenuItemRefs struct {
 }
 
 var (
-	sched         *scheduler.Scheduler
-	menuRefs      *MenuItemRefs
-	usageDataPath string
-	appConfig     *config.Config
-	mUpdateNow    *systray.MenuItem
-	mAutoUpdate   *systray.MenuItem
+	sched             *scheduler.Scheduler
+	menuRefs          *MenuItemRefs
+	usageDataPath     string
+	appConfig         *config.Config
+	mUpdateNow        *systray.MenuItem
+	intervalMenuItems map[int]*systray.MenuItem
+	mDisabled         *systray.MenuItem
+	outputDir         string
+	scriptPath        string
+	taskWithUpdate    func() error
 )
 
 func main() {
@@ -114,26 +118,52 @@ func onReady() {
 	// Add control menu items
 	mUpdateNow = systray.AddMenuItem("Update Now", "")
 
-	autoUpdateText := "Disable Auto-Update"
-	if !appConfig.AutoUpdateEnabled {
-		autoUpdateText = "Enable Auto-Update"
+	systray.AddSeparator()
+
+	// Add Settings menu with submenu
+	mSettings := systray.AddMenuItem("Settings", "")
+
+	// Add Auto-Update submenu
+	mAutoUpdateMenu := mSettings.AddSubMenuItem("Auto-Update", "")
+
+	// Initialize interval menu items map
+	intervalMenuItems = make(map[int]*systray.MenuItem)
+
+	// Add "Disabled" option
+	mDisabled = mAutoUpdateMenu.AddSubMenuItemCheckbox("Disabled", "", !appConfig.AutoUpdateEnabled)
+
+	// Add interval options (in seconds)
+	intervals := []struct {
+		seconds int
+		label   string
+	}{
+		{60, "1 minute"},
+		{300, "5 minutes"},
+		{600, "10 minutes"},
+		{1800, "30 minutes"},
+		{3600, "60 minutes"},
 	}
-	mAutoUpdate = systray.AddMenuItem(autoUpdateText, "")
+
+	for _, interval := range intervals {
+		isChecked := appConfig.AutoUpdateEnabled && interval.seconds == appConfig.UpdateInterval
+		item := mAutoUpdateMenu.AddSubMenuItemCheckbox(interval.label, "", isChecked)
+		intervalMenuItems[interval.seconds] = item
+	}
 
 	systray.AddSeparator()
 
 	// Add Quit menu item
-	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+	mQuit := systray.AddMenuItem("Quit", "")
 	log.Println("Quit menu item added")
 
-	scriptPath := findScriptPath()
+	scriptPath = findScriptPath()
 	log.Printf("Script path: %s", scriptPath)
 	log.Printf("Output directory: %s", outputDir)
 
 	exec := executor.New(scriptPath, outputDir)
 
 	// Wrapper to update menu after execution
-	taskWithUpdate := func() error {
+	taskWithUpdate = func() error {
 		err := exec.Execute()
 		if err == nil {
 			updateMenuItems()
@@ -142,8 +172,9 @@ func onReady() {
 		return err
 	}
 
-	// Create scheduler with 1-minute interval
-	sched = scheduler.New(time.Minute, taskWithUpdate)
+	// Create scheduler with configured interval
+	interval := time.Duration(appConfig.UpdateInterval) * time.Second
+	sched = scheduler.New(interval, taskWithUpdate)
 	log.Println("Scheduler created")
 
 	// Start scheduler in background
@@ -173,27 +204,66 @@ func onReady() {
 		}
 	}()
 
-	// Handle Auto-update toggle
+	// Handle "Disabled" option
 	go func() {
-		for range mAutoUpdate.ClickedCh {
-			appConfig.AutoUpdateEnabled = !appConfig.AutoUpdateEnabled
+		for range mDisabled.ClickedCh {
+			log.Println("Auto-update disabled")
 
-			if appConfig.AutoUpdateEnabled {
-				mAutoUpdate.SetTitle("Disable Auto-Update")
-				sched.Resume()
-				log.Println("Auto-update enabled")
-			} else {
-				mAutoUpdate.SetTitle("Enable Auto-Update")
-				sched.Pause()
-				log.Println("Auto-update disabled")
+			// Check Disabled, uncheck all intervals
+			mDisabled.Check()
+			for _, mi := range intervalMenuItems {
+				mi.Uncheck()
 			}
 
-			// Save config
+			// Update config
+			appConfig.AutoUpdateEnabled = false
 			if err := config.SaveConfig(appConfig); err != nil {
 				log.Printf("Failed to save config: %v", err)
 			}
+
+			// Pause scheduler
+			sched.Pause()
 		}
 	}()
+
+	// Handle interval changes
+	for intervalSeconds, menuItem := range intervalMenuItems {
+		seconds := intervalSeconds // capture for closure
+		item := menuItem
+		go func() {
+			for range item.ClickedCh {
+				log.Printf("Changing interval to %d seconds and enabling auto-update", seconds)
+
+				// Uncheck Disabled
+				mDisabled.Uncheck()
+
+				// Update checkmarks for intervals
+				for s, mi := range intervalMenuItems {
+					if s == seconds {
+						mi.Check()
+					} else {
+						mi.Uncheck()
+					}
+				}
+
+				// Update config
+				appConfig.AutoUpdateEnabled = true
+				appConfig.UpdateInterval = seconds
+				if err := config.SaveConfig(appConfig); err != nil {
+					log.Printf("Failed to save config: %v", err)
+				}
+
+				// Restart scheduler with new interval
+				sched.Stop()
+
+				interval := time.Duration(seconds) * time.Second
+				sched = scheduler.New(interval, taskWithUpdate)
+				go sched.Start()
+
+				log.Printf("Scheduler restarted with %d second interval (auto-update enabled)", seconds)
+			}
+		}()
+	}
 
 	// Wait for quit signal
 	go func() {
