@@ -13,8 +13,8 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		AutoUpdateEnabled: true,
-		UpdateInterval:    60,
+		AutoUpdateEnabled: false,
+		UpdateInterval:    1800,
 	}
 }
 
