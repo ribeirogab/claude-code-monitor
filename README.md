@@ -28,24 +28,36 @@ Note: The app will automatically install `jq` and `expect` via Homebrew if not f
 
 ## Installation
 
-### For End Users (macOS App)
+### For End Users (Recommended)
 
-1. Download `ClaudeCodeMonitor.app` from releases
-2. Move it to `/Applications` folder
-3. Double-click to open
-4. The app icon will appear in your menubar
+1. Download `ClaudeCodeMonitor-1.0.0.dmg` from releases
+2. Double-click the DMG file to open it
+3. Drag `ClaudeCodeMonitor.app` to the Applications folder
+4. Eject the DMG
+5. Open ClaudeCodeMonitor from Applications
+6. The app icon will appear in your menubar
+
+Note: The DMG includes a universal binary that works on both Intel and Apple Silicon Macs.
 
 ### For Developers
 
-#### Generate .app for Distribution
+#### Generate DMG Installer for Distribution (Recommended)
 
 ```bash
 git clone https://github.com/ribeirogab/claude-code-monitor.git
 cd claude-code-monitor
-make app
+make dmg-universal
 ```
 
-This creates `ClaudeCodeMonitor.app` ready for distribution.
+This creates `dist/ClaudeCodeMonitor-1.0.0.dmg` with a universal binary (Intel + Apple Silicon).
+
+#### Generate .app Bundle Only
+
+```bash
+make app          # Current architecture only
+make app-intel    # Intel only
+make app-universal # Universal binary
+```
 
 #### Install from Source
 

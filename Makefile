@@ -1,7 +1,8 @@
-.PHONY: help run build build-intel build-arm build-universal app app-intel app-universal clean install
+.PHONY: help run build build-intel build-arm build-universal app app-intel app-universal dmg dmg-universal clean install
 
 APP_NAME := claude-code-monitor
 BUILD_DIR := build
+DIST_DIR := dist
 CMD_DIR := cmd/monitor
 BUNDLE_NAME := ClaudeCodeMonitor.app
 
@@ -15,6 +16,8 @@ help:
 	@echo "  make app              - Create macOS app bundle for current architecture"
 	@echo "  make app-intel        - Create macOS app bundle for Intel only"
 	@echo "  make app-universal    - Create macOS app bundle with universal binary"
+	@echo "  make dmg              - Create DMG installer from existing app bundle"
+	@echo "  make dmg-universal    - Build universal app and create DMG installer"
 	@echo "  make clean            - Remove build artifacts"
 	@echo "  make install          - Install to /usr/local/bin"
 	@echo "  make help             - Show this help message"
@@ -49,28 +52,38 @@ build-universal: build-intel build-arm
 
 app: build
 	@echo "Creating macOS app bundle..."
+	@mkdir -p $(DIST_DIR)
 	@./scripts/create-app-bundle.sh
-	@echo "App bundle created: $(BUNDLE_NAME)"
-	@echo "To run: open $(BUNDLE_NAME)"
+	@echo "App bundle created: $(DIST_DIR)/$(BUNDLE_NAME)"
+	@echo "To run: open $(DIST_DIR)/$(BUNDLE_NAME)"
 
 app-intel: build-intel
 	@echo "Creating macOS app bundle for Intel..."
+	@mkdir -p $(DIST_DIR)
 	@cp $(BUILD_DIR)/$(APP_NAME)-amd64 $(BUILD_DIR)/$(APP_NAME)
 	@./scripts/create-app-bundle.sh
 	@rm $(BUILD_DIR)/$(APP_NAME)
-	@echo "App bundle created: $(BUNDLE_NAME) (Intel only)"
-	@echo "To run: open $(BUNDLE_NAME)"
+	@echo "App bundle created: $(DIST_DIR)/$(BUNDLE_NAME) (Intel only)"
+	@echo "To run: open $(DIST_DIR)/$(BUNDLE_NAME)"
 
 app-universal: build-universal
 	@echo "Creating macOS app bundle with universal binary..."
+	@mkdir -p $(DIST_DIR)
 	@./scripts/create-app-bundle.sh
-	@echo "App bundle created: $(BUNDLE_NAME) (Universal - Intel + Apple Silicon)"
-	@echo "To run: open $(BUNDLE_NAME)"
+	@echo "App bundle created: $(DIST_DIR)/$(BUNDLE_NAME) (Universal - Intel + Apple Silicon)"
+	@echo "To run: open $(DIST_DIR)/$(BUNDLE_NAME)"
+
+dmg:
+	@./scripts/create-dmg.sh
+
+dmg-universal: app-universal
+	@./scripts/create-dmg.sh
 
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR)
-	@rm -rf $(BUNDLE_NAME)
+	@rm -rf $(DIST_DIR)
+	@rm -rf dmg-build
 	@echo "Clean complete"
 
 install: build-universal

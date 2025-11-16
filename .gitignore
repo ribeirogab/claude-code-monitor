@@ -5,5 +5,5 @@ monitor.log
 
 # Build artifacts
 build/
-*.app
-*.zip
+dist/
+dmg-build/
