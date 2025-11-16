@@ -11,6 +11,8 @@ type Scheduler struct {
 	task     func() error
 	stopCh   chan struct{}
 	doneCh   chan struct{}
+	pauseCh  chan bool
+	paused   bool
 }
 
 // New creates a new Scheduler instance
@@ -20,6 +22,8 @@ func New(interval time.Duration, task func() error) *Scheduler {
 		task:     task,
 		stopCh:   make(chan struct{}),
 		doneCh:   make(chan struct{}),
+		pauseCh:  make(chan bool, 1),
+		paused:   false,
 	}
 }
 
@@ -37,8 +41,17 @@ func (s *Scheduler) Start() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.task(); err != nil {
-				log.Printf("Error executing task: %v", err)
+			if !s.paused {
+				if err := s.task(); err != nil {
+					log.Printf("Error executing task: %v", err)
+				}
+			}
+		case pauseState := <-s.pauseCh:
+			s.paused = pauseState
+			if pauseState {
+				log.Println("Scheduler paused")
+			} else {
+				log.Println("Scheduler resumed")
 			}
 		case <-s.stopCh:
 			log.Println("Scheduler stopped")
@@ -51,4 +64,25 @@ func (s *Scheduler) Start() {
 func (s *Scheduler) Stop() {
 	close(s.stopCh)
 	<-s.doneCh
+}
+
+// Pause pauses the scheduler
+func (s *Scheduler) Pause() {
+	select {
+	case s.pauseCh <- true:
+	default:
+	}
+}
+
+// Resume resumes the scheduler
+func (s *Scheduler) Resume() {
+	select {
+	case s.pauseCh <- false:
+	default:
+	}
+}
+
+// IsPaused returns whether the scheduler is currently paused
+func (s *Scheduler) IsPaused() bool {
+	return s.paused
 }
