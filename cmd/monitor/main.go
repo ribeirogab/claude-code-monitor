@@ -398,7 +398,7 @@ func updateMenuItems() {
 
 	// Update Session
 	if menuRefs.sessionPercent != nil {
-		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session    \t    %02d%%    \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
 	}
 	if menuRefs.sessionReset != nil {
 		menuRefs.sessionReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
@@ -406,7 +406,7 @@ func updateMenuItems() {
 
 	// Update Week (All)
 	if menuRefs.weekAllPercent != nil {
-		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)\t    %02d%%    \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
 	}
 	if menuRefs.weekAllReset != nil {
 		menuRefs.weekAllReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
@@ -414,7 +414,7 @@ func updateMenuItems() {
 
 	// Update Week (Opus) - only if menu items exist
 	if menuRefs.weekOpusPercent != nil {
-		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)\t    %02d%%    \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
 	}
 	if menuRefs.weekOpusReset != nil {
 		menuRefs.weekOpusReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
