@@ -225,7 +225,7 @@ func removeTimezone(text string) string {
 }
 
 func getUsageEmoji(percent int) string {
-	if percent <= 60 {
+	if percent <= 50 {
 		return "🟢"
 	} else if percent <= 85 {
 		return "🟡"

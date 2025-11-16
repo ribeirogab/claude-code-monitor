@@ -1,22 +1,31 @@
 # Claude Code Monitor
 
-A macOS menu bar application that automatically monitors Claude Code CLI usage and saves statistics to your home directory.
+A macOS menu bar application that monitors and displays Claude Code CLI usage statistics directly in your menubar.
 
 ## Features
 
-- Runs as a macOS menu bar application
-- Automatically executes usage monitoring every minute
-- Saves usage data to `~/.claude-code-monitor/`
+- Displays usage statistics in menubar dropdown with visual indicators
+- Shows Session, Week (All), and Week (Opus) usage percentages
+- Color-coded emoji indicators (🟢 0-50%, 🟡 51-85%, 🔴 86-100%)
+- Displays reset times for each metric
+- Auto-updates every minute
+- Menubar-only app (does not appear in Dock)
+- Auto-installs dependencies (jq)
+- Auto-configures directory trust
+- Auto-detects Claude CLI location (including NVM installations)
+- Saves detailed logs to `~/.claude-code-monitor/`
 - Supports both Intel and Apple Silicon Macs
-- Simple and lightweight
-- Graceful shutdown
+- Lightweight and runs in background
 
 ## Requirements
 
 - macOS (Intel or Apple Silicon)
 - [Claude Code CLI](https://code.claude.com/) installed and configured
 - `expect` command-line tool (pre-installed on macOS)
+- Homebrew (for auto-installing jq if needed)
 - Go 1.16+ (for building from source)
+
+Note: The app will automatically install `jq` via Homebrew if not found, and will auto-detect Claude CLI location even in NVM installations.
 
 ## Installation
 
@@ -64,14 +73,29 @@ Note: Cross-compilation requires CGO toolchains. Use `make app` to build for cur
 
 ## Usage
 
-1. Start the application by running `claude-code-monitor` or by double-clicking the binary
+1. Start the application by opening `ClaudeCodeMonitor.app`
 2. A small icon will appear in your macOS menu bar
-3. The application will automatically run the usage monitoring script every minute
-4. Usage data is saved to `~/.claude-code-monitor/`:
+3. Click the icon to see current usage statistics:
+   - Session usage with percentage and emoji indicator
+   - Week (All models) usage
+   - Week (Opus) usage
+   - Reset times for each metric
+   - Last update timestamp
+4. The display auto-updates every minute
+5. Usage data is also saved to `~/.claude-code-monitor/`:
    - `claude-code-usage.json` - Parsed usage statistics
-   - `claude-code-usage.log` - Raw output from the monitoring script
+   - `claude-code-usage.log` - Raw output from monitoring script
    - `claude-code-usage-execution.log` - Execution timestamps and logs
-5. Click the menu bar icon and select "Quit" to stop the application
+   - `monitor.log` - Application logs
+6. Click the menu bar icon and select "Quit" to stop the application
+
+### Visual Indicators
+
+The app uses color-coded emojis to indicate usage levels:
+
+- 🟢 Green (0-50%): Safe usage level
+- 🟡 Yellow (51-85%): Moderate usage
+- 🔴 Red (86-100%): High usage, approaching limit
 
 ## Output Format
 
@@ -130,33 +154,54 @@ make help
 
 ## How It Works
 
-1. The application runs as a menu bar app using `systray`
-2. On startup, it creates a scheduler that runs every minute
+1. The application runs as a menubar-only app using `systray`
+2. On startup, it:
+   - Loads menubar icon from assets
+   - Creates menu items for displaying usage stats
+   - Starts a scheduler that runs every minute
 3. The scheduler executes `claude-code-usage.sh` which:
-   - Launches Claude Code CLI
+   - Auto-installs `jq` via Homebrew if not found
+   - Pre-configures directory trust in `~/.claude.json` to bypass security prompts
+   - Auto-detects Claude CLI location (supports standard paths and NVM installations)
+   - Launches Claude Code CLI using `expect`
    - Captures the `/usage` command output
    - Parses usage percentages and reset times
-   - Generates JSON output
-4. Generated files are moved to `~/.claude-code-monitor/`
+   - Generates JSON output with timestamp
+4. After successful execution, the menubar display updates automatically
 5. The process repeats every minute until you quit the application
 
 ## Troubleshooting
 
 **Application doesn't start:**
 
-- Ensure `claude-code-usage.sh` is in the same directory as the binary
-- Check that Claude Code CLI is installed and accessible
+- Check that Claude Code CLI is installed and accessible: `which claude`
+- Verify Homebrew is installed (for auto-installing jq): `which brew`
+- Check application logs in `~/.claude-code-monitor/monitor.log`
 
 **No data being generated:**
 
 - Verify that Claude Code CLI is properly configured
 - Check logs in `~/.claude-code-monitor/claude-code-usage-execution.log`
-- Ensure `expect` is installed (run `which expect`)
+- Ensure `expect` is installed (pre-installed on macOS): `which expect`
+- If using NVM, ensure Node.js is properly installed
+
+**Menu not updating:**
+
+- Check if JSON file is being updated: `cat ~/.claude-code-monitor/claude-code-usage.json`
+- View execution logs: `tail -f ~/.claude-code-monitor/claude-code-usage-execution.log`
+- Restart the application
 
 **Menu bar icon not showing:**
 
-- This is a known limitation of some macOS versions
+- Check if icon file exists in the app bundle
+- The app will show "claude-code" as title text if icon is not found
 - The app is still running - check Activity Monitor for `claude-code-monitor`
+
+**Trust dialog appearing:**
+
+- This should be auto-handled by the script
+- If it persists, manually trust the directory in Claude Code CLI
+- Check if `~/.claude.json` has the correct permissions
 
 ## License
 
