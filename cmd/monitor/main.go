@@ -479,6 +479,4 @@ func createMenuItems() {
 
 	menuRefs.lastUpdate = systray.AddMenuItem(lastUpdateText, "")
 	menuRefs.lastUpdate.Disable()
-
-	systray.AddSeparator()
 }
