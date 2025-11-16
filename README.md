@@ -1,6 +1,18 @@
 # Claude Code Monitor
 
-A macOS menu bar application that monitors and displays Claude Code CLI usage statistics directly in your menubar.
+<p align="center">
+  <img src=".github/app-icon.png" alt="Claude Code Monitor Icon" width="128">
+</p>
+
+<p align="center">
+  A macOS menu bar application that monitors and displays Claude Code CLI usage statistics directly in your menubar.
+</p>
+
+## Screenshot
+
+<p align="center">
+  <img src=".github/example.png" alt="Claude Code Monitor Example" width="400">
+</p>
 
 ## Features
 
