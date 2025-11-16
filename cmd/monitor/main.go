@@ -11,6 +11,7 @@ import (
 
 	"github.com/getlantern/systray"
 
+	"github.com/ribeirogab/claude-code-monitor/internal/config"
 	"github.com/ribeirogab/claude-code-monitor/internal/executor"
 	"github.com/ribeirogab/claude-code-monitor/internal/scheduler"
 )
@@ -25,10 +26,27 @@ type UsageData struct {
 	Timestamp       string `json:"timestamp"`
 }
 
+type MenuItemRefs struct {
+	sessionPercent  *systray.MenuItem
+	sessionReset    *systray.MenuItem
+	weekAllPercent  *systray.MenuItem
+	weekAllReset    *systray.MenuItem
+	weekOpusPercent *systray.MenuItem
+	weekOpusReset   *systray.MenuItem
+	lastUpdate      *systray.MenuItem
+}
+
 var (
-	sched         *scheduler.Scheduler
-	menuItems     []*systray.MenuItem
-	usageDataPath string
+	sched             *scheduler.Scheduler
+	menuRefs          *MenuItemRefs
+	usageDataPath     string
+	appConfig         *config.Config
+	mUpdateNow        *systray.MenuItem
+	intervalMenuItems map[int]*systray.MenuItem
+	mDisabled         *systray.MenuItem
+	outputDir         string
+	scriptPath        string
+	taskWithUpdate    func() error
 )
 
 func main() {
@@ -85,22 +103,67 @@ func onReady() {
 	outputDir := filepath.Join(homeDir, ".claude-code-monitor")
 	usageDataPath = filepath.Join(outputDir, "claude-code-usage.json")
 
+	// Load configuration
+	appConfig, err = config.LoadConfig()
+	if err != nil {
+		log.Printf("Failed to load config, using defaults: %v", err)
+		appConfig = config.DefaultConfig()
+	}
+	log.Printf("Config loaded: auto-update=%v", appConfig.AutoUpdateEnabled)
+
 	// Create menu items with usage data
 	createMenuItems()
 	log.Println("Usage menu items created")
 
+	// Add control menu items
+	mUpdateNow = systray.AddMenuItem("Update Now", "")
+
+	systray.AddSeparator()
+
+	// Add Settings menu with submenu
+	mSettings := systray.AddMenuItem("Settings", "")
+
+	// Add Auto-Update submenu
+	mAutoUpdateMenu := mSettings.AddSubMenuItem("Auto-Update", "")
+
+	// Initialize interval menu items map
+	intervalMenuItems = make(map[int]*systray.MenuItem)
+
+	// Add "Disabled" option
+	mDisabled = mAutoUpdateMenu.AddSubMenuItemCheckbox("Disabled", "", !appConfig.AutoUpdateEnabled)
+
+	// Add interval options (in seconds)
+	intervals := []struct {
+		seconds int
+		label   string
+	}{
+		{60, "1 minute"},
+		{300, "5 minutes"},
+		{600, "10 minutes"},
+		{1800, "30 minutes"},
+		{3600, "60 minutes"},
+	}
+
+	for _, interval := range intervals {
+		isChecked := appConfig.AutoUpdateEnabled && interval.seconds == appConfig.UpdateInterval
+		item := mAutoUpdateMenu.AddSubMenuItemCheckbox(interval.label, "", isChecked)
+		intervalMenuItems[interval.seconds] = item
+	}
+
+	systray.AddSeparator()
+
 	// Add Quit menu item
-	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+	mQuit := systray.AddMenuItem("Quit", "")
 	log.Println("Quit menu item added")
 
-	scriptPath := findScriptPath()
+	scriptPath = findScriptPath()
 	log.Printf("Script path: %s", scriptPath)
 	log.Printf("Output directory: %s", outputDir)
 
 	exec := executor.New(scriptPath, outputDir)
 
 	// Wrapper to update menu after execution
-	taskWithUpdate := func() error {
+	taskWithUpdate = func() error {
 		err := exec.Execute()
 		if err == nil {
 			updateMenuItems()
@@ -109,13 +172,98 @@ func onReady() {
 		return err
 	}
 
-	// Create scheduler with 1-minute interval
-	sched = scheduler.New(time.Minute, taskWithUpdate)
+	// Create scheduler with configured interval
+	interval := time.Duration(appConfig.UpdateInterval) * time.Second
+	sched = scheduler.New(interval, taskWithUpdate)
 	log.Println("Scheduler created")
 
 	// Start scheduler in background
 	go sched.Start()
-	log.Println("Scheduler started")
+
+	// Pause scheduler if auto-update is disabled
+	if !appConfig.AutoUpdateEnabled {
+		sched.Pause()
+		log.Println("Scheduler started (paused)")
+	} else {
+		log.Println("Scheduler started")
+	}
+
+	// Handle Update Now button
+	go func() {
+		for range mUpdateNow.ClickedCh {
+			log.Println("Manual update triggered")
+			mUpdateNow.SetTitle("Updating...")
+			mUpdateNow.Disable()
+
+			if err := taskWithUpdate(); err != nil {
+				log.Printf("Manual update failed: %v", err)
+			}
+
+			mUpdateNow.Enable()
+			mUpdateNow.SetTitle("Update Now")
+		}
+	}()
+
+	// Handle "Disabled" option
+	go func() {
+		for range mDisabled.ClickedCh {
+			log.Println("Auto-update disabled")
+
+			// Check Disabled, uncheck all intervals
+			mDisabled.Check()
+			for _, mi := range intervalMenuItems {
+				mi.Uncheck()
+			}
+
+			// Update config
+			appConfig.AutoUpdateEnabled = false
+			if err := config.SaveConfig(appConfig); err != nil {
+				log.Printf("Failed to save config: %v", err)
+			}
+
+			// Pause scheduler
+			sched.Pause()
+		}
+	}()
+
+	// Handle interval changes
+	for intervalSeconds, menuItem := range intervalMenuItems {
+		seconds := intervalSeconds // capture for closure
+		item := menuItem
+		go func() {
+			for range item.ClickedCh {
+				log.Printf("Changing interval to %d seconds and enabling auto-update", seconds)
+
+				// Uncheck Disabled
+				mDisabled.Uncheck()
+
+				// Update checkmarks for intervals
+				for s, mi := range intervalMenuItems {
+					if s == seconds {
+						mi.Check()
+					} else {
+						mi.Uncheck()
+					}
+				}
+
+				// Update config
+				appConfig.AutoUpdateEnabled = true
+				appConfig.UpdateInterval = seconds
+				if err := config.SaveConfig(appConfig); err != nil {
+					log.Printf("Failed to save config: %v", err)
+				}
+
+				// Restart scheduler with new interval
+				sched.Stop()
+
+				interval := time.Duration(seconds) * time.Second
+				sched = scheduler.New(interval, taskWithUpdate)
+				go sched.Start()
+
+				log.Printf("Scheduler restarted with %d second interval (auto-update enabled)", seconds)
+			}
+		}()
+	}
 
 	// Wait for quit signal
 	go func() {
@@ -207,6 +355,10 @@ func loadUsageData() (*UsageData, error) {
 	return &usage, nil
 }
 
+func hasOpusAccess(usage *UsageData) bool {
+	return usage.WeekOpusReset != ""
+}
+
 func formatTimestamp(timestamp string) string {
 	t, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
@@ -240,31 +392,50 @@ func updateMenuItems() {
 		return
 	}
 
-	if len(menuItems) >= 7 {
-		// Update Session
-		menuItems[0].SetTitle(fmt.Sprintf("Session    \t%02d%% \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
-		menuItems[1].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
+	if menuRefs == nil {
+		return
+	}
 
-		// Update Week (All)
-		menuItems[2].SetTitle(fmt.Sprintf("Week (All)\t%02d%% \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
-		menuItems[3].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
+	// Update Session
+	if menuRefs.sessionPercent != nil {
+		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+	}
+	if menuRefs.sessionReset != nil {
+		menuRefs.sessionReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
+	}
 
-		// Update Week (Opus)
-		menuItems[4].SetTitle(fmt.Sprintf("Week (Opus)\t%02d%% \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
-		menuItems[5].SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
+	// Update Week (All)
+	if menuRefs.weekAllPercent != nil {
+		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+	}
+	if menuRefs.weekAllReset != nil {
+		menuRefs.weekAllReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
+	}
 
-		// Update Last update
-		menuItems[6].SetTitle(formatTimestamp(usage.Timestamp))
+	// Update Week (Opus) - only if menu items exist
+	if menuRefs.weekOpusPercent != nil {
+		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+	}
+	if menuRefs.weekOpusReset != nil {
+		menuRefs.weekOpusReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
+	}
+
+	// Update Last update
+	if menuRefs.lastUpdate != nil {
+		menuRefs.lastUpdate.SetTitle(formatTimestamp(usage.Timestamp))
 	}
 }
 
 func createMenuItems() {
 	usage, err := loadUsageData()
 
+	menuRefs = &MenuItemRefs{}
+
 	var sessionText, sessionResetText string
 	var weekAllText, weekAllResetText string
 	var weekOpusText, weekOpusResetText string
 	var lastUpdateText string
+	var showOpus bool
 
 	if err != nil {
 		sessionText = "Session    \tLoading..."
@@ -274,40 +445,38 @@ func createMenuItems() {
 		weekOpusText = "Week (Opus)\tLoading..."
 		weekOpusResetText = "resets: N/A"
 		lastUpdateText = "N/A"
+		showOpus = true
 	} else {
-		sessionText = fmt.Sprintf("Session    \t%02d%% \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
+		sessionText = fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
-		weekAllText = fmt.Sprintf("Week (All)\t%02d%% \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
+		weekAllText = fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
-		weekOpusText = fmt.Sprintf("Week (Opus)\t%02d%% \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
+		weekOpusText = fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
 		lastUpdateText = formatTimestamp(usage.Timestamp)
+		showOpus = hasOpusAccess(usage)
 	}
 
 	// Session
-	menuItems = append(menuItems, systray.AddMenuItem(sessionText, ""))
-	sessionResetItem := systray.AddMenuItem(sessionResetText, "")
-	sessionResetItem.Disable()
-	menuItems = append(menuItems, sessionResetItem)
+	menuRefs.sessionPercent = systray.AddMenuItem(sessionText, "")
+	menuRefs.sessionReset = systray.AddMenuItem(sessionResetText, "")
+	menuRefs.sessionReset.Disable()
 	systray.AddSeparator()
 
 	// Week (All)
-	menuItems = append(menuItems, systray.AddMenuItem(weekAllText, ""))
-	weekAllResetItem := systray.AddMenuItem(weekAllResetText, "")
-	weekAllResetItem.Disable()
-	menuItems = append(menuItems, weekAllResetItem)
+	menuRefs.weekAllPercent = systray.AddMenuItem(weekAllText, "")
+	menuRefs.weekAllReset = systray.AddMenuItem(weekAllResetText, "")
+	menuRefs.weekAllReset.Disable()
 	systray.AddSeparator()
 
-	// Week (Opus)
-	menuItems = append(menuItems, systray.AddMenuItem(weekOpusText, ""))
-	weekOpusResetItem := systray.AddMenuItem(weekOpusResetText, "")
-	weekOpusResetItem.Disable()
-	menuItems = append(menuItems, weekOpusResetItem)
-	systray.AddSeparator()
+	// Week (Opus) - only create if user has Opus access
+	if showOpus {
+		menuRefs.weekOpusPercent = systray.AddMenuItem(weekOpusText, "")
+		menuRefs.weekOpusReset = systray.AddMenuItem(weekOpusResetText, "")
+		menuRefs.weekOpusReset.Disable()
+		systray.AddSeparator()
+	}
 
-	lastUpdateItem := systray.AddMenuItem(lastUpdateText, "")
-	lastUpdateItem.Disable()
-	menuItems = append(menuItems, lastUpdateItem)
-
-	systray.AddSeparator()
+	menuRefs.lastUpdate = systray.AddMenuItem(lastUpdateText, "")
+	menuRefs.lastUpdate.Disable()
 }

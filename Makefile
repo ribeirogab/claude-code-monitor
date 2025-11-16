@@ -1,4 +1,4 @@
-.PHONY: help run build build-intel build-arm build-universal app app-intel app-universal dmg dmg-universal clean install
+.PHONY: help run dev build build-intel build-arm build-universal app app-intel app-universal dmg dmg-universal clean install
 
 APP_NAME := claude-code-monitor
 BUILD_DIR := build
@@ -9,6 +9,7 @@ BUNDLE_NAME := ClaudeCodeMonitor.app
 help:
 	@echo "Available targets:"
 	@echo "  make run              - Run the application in development mode"
+	@echo "  make dev              - Build and execute the binary"
 	@echo "  make build            - Build for current architecture"
 	@echo "  make build-intel      - Build for Intel (amd64)"
 	@echo "  make build-arm        - Build for Apple Silicon (arm64)"
@@ -25,6 +26,12 @@ help:
 run:
 	@echo "Running $(APP_NAME)..."
 	@go run $(CMD_DIR)/main.go
+
+dev: clean build
+	@echo "Killing existing instances..."
+	@killall $(APP_NAME) 2>/dev/null || true
+	@echo "Starting $(APP_NAME)..."
+	@$(BUILD_DIR)/$(APP_NAME)
 
 build:
 	@echo "Building $(APP_NAME) for current architecture..."

@@ -20,12 +20,16 @@
 - Shows Session, Week (All), and Week (Opus) usage percentages
 - Color-coded emoji indicators (🟢 0-50%, 🟡 51-85%, 🔴 86-100%)
 - Displays reset times for each metric
-- Auto-updates every minute
+- **Configurable auto-update** with customizable intervals (1m, 5m, 10m, 30m, 60m) or disabled
+- **Manual "Update Now" button** with visual feedback
+- **Settings menu** for easy configuration
+- **Smart Opus detection** - automatically hides Opus section when user doesn't have access
 - Menubar-only app (does not appear in Dock)
 - Auto-installs dependencies (jq)
 - Auto-configures directory trust
 - Auto-detects Claude CLI location (including NVM installations)
 - Saves detailed logs to `~/.claude-code-monitor/`
+- Persistent settings stored in `~/.claude-code-monitor/config.json`
 - Supports both Intel and Apple Silicon Macs
 - Lightweight and runs in background
 
@@ -44,7 +48,7 @@ Note: The app will automatically install `jq` and `expect` via Homebrew if not f
 
 **Installation Steps:**
 
-1. Download `ClaudeCodeMonitor-1.0.1.dmg` from releases
+1. Download `ClaudeCodeMonitor-1.1.0.dmg` from releases
 2. Double-click the DMG file to open it
 3. Drag `ClaudeCodeMonitor.app` to the Applications folder
 4. Eject the DMG
@@ -78,7 +82,7 @@ cd claude-code-monitor
 make dmg-universal
 ```
 
-This creates `dist/ClaudeCodeMonitor-1.0.1.dmg` with a universal binary (Intel + Apple Silicon).
+This creates `dist/ClaudeCodeMonitor-1.1.0.dmg` with a universal binary (Intel + Apple Silicon).
 
 #### Generate .app Bundle Only
 
@@ -118,16 +122,24 @@ Note: Cross-compilation requires CGO toolchains. Use `make app` to build for cur
 3. Click the icon to see current usage statistics:
    - Session usage with percentage and emoji indicator
    - Week (All models) usage
-   - Week (Opus) usage
+   - Week (Opus) usage (only shown if you have Opus access)
    - Reset times for each metric
    - Last update timestamp
-4. The display auto-updates every minute
-5. Usage data is also saved to `~/.claude-code-monitor/`:
+4. Use the "Update Now" button to manually refresh usage data
+5. Configure auto-update settings via **Settings > Auto-Update**:
+   - **Disabled** - No automatic updates (manual only)
+   - **1 minute** - Update every minute
+   - **5 minutes** - Update every 5 minutes
+   - **10 minutes** - Update every 10 minutes
+   - **30 minutes** - Update every 30 minutes (default)
+   - **60 minutes** - Update every hour
+6. Usage data is also saved to `~/.claude-code-monitor/`:
+   - `config.json` - User settings (auto-update preferences)
    - `claude-code-usage.json` - Parsed usage statistics
    - `claude-code-usage.log` - Raw output from monitoring script
    - `claude-code-usage-execution.log` - Execution timestamps and logs
    - `monitor.log` - Application logs
-6. Click the menu bar icon and select "Quit" to stop the application
+7. Click the menu bar icon and select "Quit" to stop the application
 
 ### Visual Indicators
 
@@ -158,7 +170,8 @@ The `claude-code-usage.json` file contains:
 Run in development mode:
 
 ```bash
-make run
+make run  # Run with go run (no build)
+make dev  # Build and execute binary (clean build, no cache)
 ```
 
 Clean build artifacts:
@@ -181,6 +194,8 @@ make help
 │   └── monitor/          # Main application entry point
 │       └── main.go
 ├── internal/
+│   ├── config/           # Configuration management
+│   │   └── config.go
 │   ├── executor/         # Script execution logic
 │   │   └── executor.go
 │   └── scheduler/        # Periodic task scheduling
@@ -196,9 +211,11 @@ make help
 
 1. The application runs as a menubar-only app using `systray`
 2. On startup, it:
+   - Loads user configuration from `~/.claude-code-monitor/config.json`
    - Loads menubar icon from assets
    - Creates menu items for displaying usage stats
-   - Starts a scheduler that runs every minute
+   - Detects Opus access and conditionally shows/hides Opus section
+   - Starts a scheduler with configurable interval (default: 30 minutes, disabled by default)
 3. The scheduler executes `claude-code-usage.sh` which:
    - Auto-installs `jq` via Homebrew if not found
    - Pre-configures directory trust in `~/.claude.json` to bypass security prompts
@@ -208,7 +225,8 @@ make help
    - Parses usage percentages and reset times
    - Generates JSON output with timestamp
 4. After successful execution, the menubar display updates automatically
-5. The process repeats every minute until you quit the application
+5. Users can manually trigger updates via "Update Now" button
+6. Settings are persisted and loaded on next startup
 
 ## Troubleshooting
 
