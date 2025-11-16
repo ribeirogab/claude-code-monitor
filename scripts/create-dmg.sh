@@ -4,7 +4,10 @@ set -e
 
 APP_NAME="ClaudeCodeMonitor"
 DMG_NAME="ClaudeCodeMonitor"
-VERSION="1.0.0"
+
+# Get version from Info.plist
+INFO_PLIST="assets/Info.plist"
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST" 2>/dev/null || echo "1.0.0")
 
 # Paths
 DIST_DIR="dist"
