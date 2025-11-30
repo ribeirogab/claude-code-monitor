@@ -17,15 +17,20 @@
 ## Features
 
 - Displays usage statistics in menubar dropdown with visual indicators
-- Shows Session, Week (All), and Week (Opus) usage percentages
-- Color-coded emoji indicators (🟢 0-50%, 🟡 51-85%, 🔴 86-100%)
+- Shows Session, Week (All), and Week (Sonnet) usage percentages
+- **Dynamic menu bar icon** that changes color based on session usage:
+  - Green icon (0-50%): Safe usage level
+  - Yellow icon (51-85%): Moderate usage
+  - Red icon (86-100%): High usage, approaching limit
+- Color-coded emoji indicators in menu (🟢 0-50%, 🟡 51-85%, 🔴 86-100%)
 - Displays reset times for each metric
+- **Automatic update checker** - notifies when a new version is available on GitHub
 - **Configurable auto-update** with customizable intervals (1m, 5m, 10m, 30m, 60m) or disabled
 - **Manual "Update Now" button** with visual feedback
 - **Settings menu** for easy configuration
-- **Smart Opus detection** - automatically hides Opus section when user doesn't have access
+- **Smart model detection** - automatically shows Sonnet or Opus section based on your plan
 - Menubar-only app (does not appear in Dock)
-- Auto-installs dependencies (jq)
+- Auto-installs dependencies (jq, expect)
 - Auto-configures directory trust
 - Auto-detects Claude CLI location (including NVM installations)
 - Saves detailed logs to `~/.claude-code-monitor/`
@@ -118,33 +123,41 @@ Note: Cross-compilation requires CGO toolchains. Use `make app` to build for cur
 ## Usage
 
 1. Start the application by opening `ClaudeCodeMonitor.app`
-2. A small icon will appear in your macOS menu bar
+2. A small icon will appear in your macOS menu bar (color changes based on usage)
 3. Click the icon to see current usage statistics:
    - Session usage with percentage and emoji indicator
    - Week (All models) usage
-   - Week (Opus) usage (only shown if you have Opus access)
+   - Week (Sonnet) usage (or Week (Opus) for older CLI versions)
    - Reset times for each metric
    - Last update timestamp
+   - "Update Available" notification when a new version is released
 4. Use the "Update Now" button to manually refresh usage data
-5. Configure auto-update settings via **Settings > Auto-Update**:
+5. Click "Update Available" to open the GitHub releases page (when shown)
+6. Configure auto-update settings via **Settings > Auto-Update**:
    - **Disabled** - No automatic updates (manual only)
    - **1 minute** - Update every minute
    - **5 minutes** - Update every 5 minutes
    - **10 minutes** - Update every 10 minutes
    - **30 minutes** - Update every 30 minutes (default)
    - **60 minutes** - Update every hour
-6. Usage data is also saved to `~/.claude-code-monitor/`:
+7. Usage data is also saved to `~/.claude-code-monitor/`:
    - `config.json` - User settings (auto-update preferences)
    - `claude-code-usage.json` - Parsed usage statistics
    - `claude-code-usage.log` - Raw output from monitoring script
    - `claude-code-usage-execution.log` - Execution timestamps and logs
    - `monitor.log` - Application logs
-7. Click the menu bar icon and select "Quit" to stop the application
+8. Click the menu bar icon and select "Quit" to stop the application
 
 ### Visual Indicators
 
-The app uses color-coded emojis to indicate usage levels:
+The app uses two types of visual indicators:
 
+**Menu Bar Icon** (changes based on session usage):
+- Green icon (0-50%): Safe usage level
+- Yellow icon (51-85%): Moderate usage
+- Red icon (86-100%): High usage, approaching limit
+
+**Menu Emojis** (shown next to each percentage):
 - 🟢 Green (0-50%): Safe usage level
 - 🟡 Yellow (51-85%): Moderate usage
 - 🔴 Red (86-100%): High usage, approaching limit
@@ -159,11 +172,15 @@ The `claude-code-usage.json` file contains:
   "session_reset": "10pm (America/Sao_Paulo)",
   "week_all_percent": 19,
   "week_all_reset": "Nov 21 at 9pm (America/Sao_Paulo)",
-  "week_opus_percent": 23,
-  "week_opus_reset": "Nov 21 at 9pm (America/Sao_Paulo)",
+  "week_opus_percent": 0,
+  "week_opus_reset": "",
+  "week_sonnet_percent": 23,
+  "week_sonnet_reset": "Nov 21 at 9pm (America/Sao_Paulo)",
   "timestamp": "2025-11-16T00:26:20Z"
 }
 ```
+
+Note: `week_opus_*` fields are for backward compatibility with older Claude CLI versions. Newer versions use `week_sonnet_*` fields.
 
 ## Development
 
@@ -198,9 +215,14 @@ make help
 │   │   └── config.go
 │   ├── executor/         # Script execution logic
 │   │   └── executor.go
-│   └── scheduler/        # Periodic task scheduling
-│       └── scheduler.go
-├── assets/               # Application assets (icons, etc.)
+│   ├── scheduler/        # Periodic task scheduling
+│   │   └── scheduler.go
+│   └── updater/          # GitHub update checker
+│       ├── github.go     # GitHub API client
+│       ├── updater.go    # Update logic
+│       └── version.go    # Semantic version parsing
+├── assets/
+│   └── icons/            # Menu bar icons (green, yellow, red)
 ├── claude-code-usage.sh  # Monitoring script
 ├── Makefile              # Build automation
 ├── go.mod                # Go module definition
@@ -214,19 +236,23 @@ make help
    - Loads user configuration from `~/.claude-code-monitor/config.json`
    - Loads menubar icon from assets
    - Creates menu items for displaying usage stats
-   - Detects Opus access and conditionally shows/hides Opus section
+   - Detects Sonnet/Opus access and conditionally shows the appropriate section
    - Starts a scheduler with configurable interval (default: 30 minutes, disabled by default)
+   - Starts the update checker (checks GitHub releases every hour)
 3. The scheduler executes `claude-code-usage.sh` which:
-   - Auto-installs `jq` via Homebrew if not found
+   - Auto-installs `jq` and `expect` via Homebrew if not found
    - Pre-configures directory trust in `~/.claude.json` to bypass security prompts
    - Auto-detects Claude CLI location (supports standard paths and NVM installations)
    - Launches Claude Code CLI using `expect`
    - Captures the `/usage` command output
-   - Parses usage percentages and reset times
+   - Parses usage percentages and reset times (supports both Sonnet and Opus formats)
    - Generates JSON output with timestamp
-4. After successful execution, the menubar display updates automatically
+4. After successful execution:
+   - The menubar display updates automatically
+   - The menu bar icon changes color based on session usage (green/yellow/red)
 5. Users can manually trigger updates via "Update Now" button
-6. Settings are persisted and loaded on next startup
+6. When a new version is detected, "Update Available" menu item appears
+7. Settings are persisted and loaded on next startup
 
 ## Troubleshooting
 
