@@ -5,6 +5,8 @@ BUILD_DIR := build
 DIST_DIR := dist
 CMD_DIR := cmd/monitor
 BUNDLE_NAME := ClaudeCodeMonitor.app
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -X main.AppVersion=$(VERSION)
 
 help:
 	@echo "Available targets:"
@@ -34,21 +36,21 @@ dev: clean build
 	@$(BUILD_DIR)/$(APP_NAME)
 
 build:
-	@echo "Building $(APP_NAME) for current architecture..."
+	@echo "Building $(APP_NAME) $(VERSION) for current architecture..."
 	@mkdir -p $(BUILD_DIR)
-	@go build -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)/main.go
+	@go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)/main.go
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)"
 
 build-intel:
-	@echo "Building $(APP_NAME) for Intel (amd64)..."
+	@echo "Building $(APP_NAME) $(VERSION) for Intel (amd64)..."
 	@mkdir -p $(BUILD_DIR)
-	@CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-amd64 $(CMD_DIR)/main.go
+	@CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-amd64 $(CMD_DIR)/main.go
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)-amd64"
 
 build-arm:
-	@echo "Building $(APP_NAME) for Apple Silicon (arm64)..."
+	@echo "Building $(APP_NAME) $(VERSION) for Apple Silicon (arm64)..."
 	@mkdir -p $(BUILD_DIR)
-	@CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-arm64 $(CMD_DIR)/main.go
+	@CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-arm64 $(CMD_DIR)/main.go
 	@echo "Build complete: $(BUILD_DIR)/$(APP_NAME)-arm64"
 
 build-universal: build-intel build-arm

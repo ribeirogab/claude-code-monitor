@@ -14,26 +14,39 @@ import (
 	"github.com/ribeirogab/claude-code-monitor/internal/config"
 	"github.com/ribeirogab/claude-code-monitor/internal/executor"
 	"github.com/ribeirogab/claude-code-monitor/internal/scheduler"
+	"github.com/ribeirogab/claude-code-monitor/internal/updater"
+)
+
+// AppVersion is set at build time via ldflags
+var AppVersion = "dev"
+
+const (
+	GitHubOwner = "ribeirogab"
+	GitHubRepo  = "claude-code-monitor"
 )
 
 type UsageData struct {
-	SessionPercent  int    `json:"session_percent"`
-	SessionReset    string `json:"session_reset"`
-	WeekAllPercent  int    `json:"week_all_percent"`
-	WeekAllReset    string `json:"week_all_reset"`
-	WeekOpusPercent int    `json:"week_opus_percent"`
-	WeekOpusReset   string `json:"week_opus_reset"`
-	Timestamp       string `json:"timestamp"`
+	SessionPercent    int    `json:"session_percent"`
+	SessionReset      string `json:"session_reset"`
+	WeekAllPercent    int    `json:"week_all_percent"`
+	WeekAllReset      string `json:"week_all_reset"`
+	WeekOpusPercent   int    `json:"week_opus_percent"`
+	WeekOpusReset     string `json:"week_opus_reset"`
+	WeekSonnetPercent int    `json:"week_sonnet_percent"`
+	WeekSonnetReset   string `json:"week_sonnet_reset"`
+	Timestamp         string `json:"timestamp"`
 }
 
 type MenuItemRefs struct {
-	sessionPercent  *systray.MenuItem
-	sessionReset    *systray.MenuItem
-	weekAllPercent  *systray.MenuItem
-	weekAllReset    *systray.MenuItem
-	weekOpusPercent *systray.MenuItem
-	weekOpusReset   *systray.MenuItem
-	lastUpdate      *systray.MenuItem
+	sessionPercent    *systray.MenuItem
+	sessionReset      *systray.MenuItem
+	weekAllPercent    *systray.MenuItem
+	weekAllReset      *systray.MenuItem
+	weekOpusPercent   *systray.MenuItem
+	weekOpusReset     *systray.MenuItem
+	weekSonnetPercent *systray.MenuItem
+	weekSonnetReset   *systray.MenuItem
+	lastUpdate        *systray.MenuItem
 }
 
 var (
@@ -47,6 +60,8 @@ var (
 	outputDir         string
 	scriptPath        string
 	taskWithUpdate    func() error
+	appUpdater        *updater.Updater
+	mUpdateAvailable  *systray.MenuItem
 )
 
 func main() {
@@ -149,6 +164,43 @@ func onReady() {
 		item := mAutoUpdateMenu.AddSubMenuItemCheckbox(interval.label, "", isChecked)
 		intervalMenuItems[interval.seconds] = item
 	}
+
+	systray.AddSeparator()
+
+	// Add update available menu item (hidden by default)
+	mUpdateAvailable = systray.AddMenuItem("", "")
+	mUpdateAvailable.Hide()
+
+	// Initialize updater
+	appUpdater = updater.New(updater.Config{
+		Owner:          GitHubOwner,
+		Repo:           GitHubRepo,
+		CurrentVersion: AppVersion,
+		CheckInterval:  1 * time.Hour,
+	})
+
+	// Set callback for when update is found
+	appUpdater.OnUpdateFound = func(info *updater.UpdateInfo) {
+		if info.HasUpdate {
+			mUpdateAvailable.SetTitle(fmt.Sprintf("Update Available (%s)", info.LatestVersion.String()))
+			mUpdateAvailable.Show()
+			log.Printf("Update available: %s -> %s", info.CurrentVersion.String(), info.LatestVersion.String())
+		}
+	}
+
+	// Start periodic update checks
+	appUpdater.StartPeriodicCheck()
+	log.Println("Updater started")
+
+	// Handle update available click
+	go func() {
+		for range mUpdateAvailable.ClickedCh {
+			log.Println("Opening releases page...")
+			if err := appUpdater.OpenLatestRelease(); err != nil {
+				log.Printf("Failed to open releases page: %v", err)
+			}
+		}
+	}()
 
 	systray.AddSeparator()
 
@@ -314,19 +366,19 @@ func findScriptPath() string {
 	return ""
 }
 
-func loadIcon() ([]byte, error) {
+func loadIconByName(iconName string) ([]byte, error) {
 	// Try multiple paths for icon (dev mode and app bundle)
 	paths := []string{
-		"assets/icons/menubar-icon.png",
-		"../Resources/assets/icons/menubar-icon.png",
+		fmt.Sprintf("assets/icons/%s.png", iconName),
+		fmt.Sprintf("../Resources/assets/icons/%s.png", iconName),
 	}
 
 	// Add path relative to executable
 	if exe, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exe)
 		paths = append(paths,
-			filepath.Join(exeDir, "..", "Resources", "assets", "icons", "menubar-icon.png"),
-			filepath.Join(exeDir, "assets", "icons", "menubar-icon.png"),
+			filepath.Join(exeDir, "..", "Resources", "assets", "icons", fmt.Sprintf("%s.png", iconName)),
+			filepath.Join(exeDir, "assets", "icons", fmt.Sprintf("%s.png", iconName)),
 		)
 	}
 
@@ -338,7 +390,32 @@ func loadIcon() ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("icon file not found in any expected location")
+	return nil, fmt.Errorf("icon %s not found in any expected location", iconName)
+}
+
+func loadIcon() ([]byte, error) {
+	return loadIconByName("menubar-icon")
+}
+
+func updateIcon(sessionPercent int) {
+	var iconName string
+
+	if sessionPercent > 85 {
+		iconName = "menubar-icon-red"
+	} else if sessionPercent > 50 {
+		iconName = "menubar-icon-yellow"
+	} else {
+		iconName = "menubar-icon"
+	}
+
+	iconData, err := loadIconByName(iconName)
+	if err != nil {
+		log.Printf("Failed to load icon %s: %v", iconName, err)
+		return
+	}
+
+	systray.SetIcon(iconData)
+	log.Printf("Icon updated to: %s (session: %d%%)", iconName, sessionPercent)
 }
 
 func loadUsageData() (*UsageData, error) {
@@ -357,6 +434,10 @@ func loadUsageData() (*UsageData, error) {
 
 func hasOpusAccess(usage *UsageData) bool {
 	return usage.WeekOpusReset != ""
+}
+
+func hasSonnetAccess(usage *UsageData) bool {
+	return usage.WeekSonnetReset != ""
 }
 
 func formatTimestamp(timestamp string) string {
@@ -396,9 +477,12 @@ func updateMenuItems() {
 		return
 	}
 
+	// Update icon based on session usage
+	updateIcon(usage.SessionPercent)
+
 	// Update Session
 	if menuRefs.sessionPercent != nil {
-		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session              %02d%%   %s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
 	}
 	if menuRefs.sessionReset != nil {
 		menuRefs.sessionReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
@@ -406,7 +490,7 @@ func updateMenuItems() {
 
 	// Update Week (All)
 	if menuRefs.weekAllPercent != nil {
-		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)          %02d%%   %s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
 	}
 	if menuRefs.weekAllReset != nil {
 		menuRefs.weekAllReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
@@ -414,10 +498,18 @@ func updateMenuItems() {
 
 	// Update Week (Opus) - only if menu items exist
 	if menuRefs.weekOpusPercent != nil {
-		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)       %02d%%   %s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
 	}
 	if menuRefs.weekOpusReset != nil {
 		menuRefs.weekOpusReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
+	}
+
+	// Update Week (Sonnet) - only if menu items exist
+	if menuRefs.weekSonnetPercent != nil {
+		menuRefs.weekSonnetPercent.SetTitle(fmt.Sprintf("Week (Sonnet)   %02d%%   %s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent)))
+	}
+	if menuRefs.weekSonnetReset != nil {
+		menuRefs.weekSonnetReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset)))
 	}
 
 	// Update Last update
@@ -434,27 +526,34 @@ func createMenuItems() {
 	var sessionText, sessionResetText string
 	var weekAllText, weekAllResetText string
 	var weekOpusText, weekOpusResetText string
+	var weekSonnetText, weekSonnetResetText string
 	var lastUpdateText string
-	var showOpus bool
+	var showOpus, showSonnet bool
 
 	if err != nil {
-		sessionText = "Session    \tLoading..."
+		sessionText = "Session         Loading..."
 		sessionResetText = "resets: N/A"
-		weekAllText = "Week (All)\tLoading..."
+		weekAllText = "Week (All)      Loading..."
 		weekAllResetText = "resets: N/A"
-		weekOpusText = "Week (Opus)\tLoading..."
+		weekOpusText = "Week (Opus)     Loading..."
 		weekOpusResetText = "resets: N/A"
+		weekSonnetText = "Week (Sonnet)   Loading..."
+		weekSonnetResetText = "resets: N/A"
 		lastUpdateText = "N/A"
-		showOpus = true
+		showOpus = false
+		showSonnet = true // Default to showing Sonnet for new users
 	} else {
-		sessionText = fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
+		sessionText = fmt.Sprintf("Session              %02d%%   %s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
-		weekAllText = fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
+		weekAllText = fmt.Sprintf("Week (All)          %02d%%   %s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
-		weekOpusText = fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
+		weekOpusText = fmt.Sprintf("Week (Opus)       %02d%%   %s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
+		weekSonnetText = fmt.Sprintf("Week (Sonnet)   %02d%%   %s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent))
+		weekSonnetResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset))
 		lastUpdateText = formatTimestamp(usage.Timestamp)
 		showOpus = hasOpusAccess(usage)
+		showSonnet = hasSonnetAccess(usage)
 	}
 
 	// Session
@@ -469,11 +568,19 @@ func createMenuItems() {
 	menuRefs.weekAllReset.Disable()
 	systray.AddSeparator()
 
-	// Week (Opus) - only create if user has Opus access
+	// Week (Opus) - only create if user has Opus access (old format)
 	if showOpus {
 		menuRefs.weekOpusPercent = systray.AddMenuItem(weekOpusText, "")
 		menuRefs.weekOpusReset = systray.AddMenuItem(weekOpusResetText, "")
 		menuRefs.weekOpusReset.Disable()
+		systray.AddSeparator()
+	}
+
+	// Week (Sonnet) - only create if user has Sonnet access (new format)
+	if showSonnet {
+		menuRefs.weekSonnetPercent = systray.AddMenuItem(weekSonnetText, "")
+		menuRefs.weekSonnetReset = systray.AddMenuItem(weekSonnetResetText, "")
+		menuRefs.weekSonnetReset.Disable()
 		systray.AddSeparator()
 	}
 
