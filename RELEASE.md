@@ -12,11 +12,11 @@
 
 The menu bar icon now changes color based on your session usage:
 
-| Usage Level | Icon Color | Description |
-|-------------|------------|-------------|
-| 0-50% | Green | Safe usage level |
-| 51-85% | Yellow | Moderate usage |
-| 86-100% | Red | High usage, approaching limit |
+| Usage Level | Icon | Description |
+|-------------|------|-------------|
+| 0-50% | ![Green](assets/icons/menubar-icon.png) | Safe usage level |
+| 51-85% | ![Yellow](assets/icons/menubar-icon-yellow.png) | Moderate usage |
+| 86-100% | ![Red](assets/icons/menubar-icon-red.png) | High usage, approaching limit |
 
 ### Update Checker
 
