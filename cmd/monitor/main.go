@@ -406,7 +406,7 @@ func updateMenuItems() {
 
 	// Update Session
 	if menuRefs.sessionPercent != nil {
-		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
+		menuRefs.sessionPercent.SetTitle(fmt.Sprintf("Session              %02d%%   %s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent)))
 	}
 	if menuRefs.sessionReset != nil {
 		menuRefs.sessionReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset)))
@@ -414,7 +414,7 @@ func updateMenuItems() {
 
 	// Update Week (All)
 	if menuRefs.weekAllPercent != nil {
-		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
+		menuRefs.weekAllPercent.SetTitle(fmt.Sprintf("Week (All)          %02d%%   %s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent)))
 	}
 	if menuRefs.weekAllReset != nil {
 		menuRefs.weekAllReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset)))
@@ -422,7 +422,7 @@ func updateMenuItems() {
 
 	// Update Week (Opus) - only if menu items exist
 	if menuRefs.weekOpusPercent != nil {
-		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
+		menuRefs.weekOpusPercent.SetTitle(fmt.Sprintf("Week (Opus)       %02d%%   %s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent)))
 	}
 	if menuRefs.weekOpusReset != nil {
 		menuRefs.weekOpusReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
@@ -430,7 +430,7 @@ func updateMenuItems() {
 
 	// Update Week (Sonnet) - only if menu items exist
 	if menuRefs.weekSonnetPercent != nil {
-		menuRefs.weekSonnetPercent.SetTitle(fmt.Sprintf("Week (Sonnet)\t  %02d%%  \t%s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent)))
+		menuRefs.weekSonnetPercent.SetTitle(fmt.Sprintf("Week (Sonnet)   %02d%%   %s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent)))
 	}
 	if menuRefs.weekSonnetReset != nil {
 		menuRefs.weekSonnetReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset)))
@@ -455,25 +455,25 @@ func createMenuItems() {
 	var showOpus, showSonnet bool
 
 	if err != nil {
-		sessionText = "Session    \tLoading..."
+		sessionText = "Session         Loading..."
 		sessionResetText = "resets: N/A"
-		weekAllText = "Week (All)\tLoading..."
+		weekAllText = "Week (All)      Loading..."
 		weekAllResetText = "resets: N/A"
-		weekOpusText = "Week (Opus)\tLoading..."
+		weekOpusText = "Week (Opus)     Loading..."
 		weekOpusResetText = "resets: N/A"
-		weekSonnetText = "Week (Sonnet)\tLoading..."
+		weekSonnetText = "Week (Sonnet)   Loading..."
 		weekSonnetResetText = "resets: N/A"
 		lastUpdateText = "N/A"
 		showOpus = false
 		showSonnet = true // Default to showing Sonnet for new users
 	} else {
-		sessionText = fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
+		sessionText = fmt.Sprintf("Session              %02d%%   %s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
-		weekAllText = fmt.Sprintf("Week (All)\t  %02d%%  \t%s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
+		weekAllText = fmt.Sprintf("Week (All)          %02d%%   %s", usage.WeekAllPercent, getUsageEmoji(usage.WeekAllPercent))
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
-		weekOpusText = fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
+		weekOpusText = fmt.Sprintf("Week (Opus)       %02d%%   %s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
-		weekSonnetText = fmt.Sprintf("Week (Sonnet)\t  %02d%%  \t%s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent))
+		weekSonnetText = fmt.Sprintf("Week (Sonnet)   %02d%%   %s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent))
 		weekSonnetResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset))
 		lastUpdateText = formatTimestamp(usage.Timestamp)
 		showOpus = hasOpusAccess(usage)
