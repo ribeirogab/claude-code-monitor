@@ -14,6 +14,15 @@ import (
 	"github.com/ribeirogab/claude-code-monitor/internal/config"
 	"github.com/ribeirogab/claude-code-monitor/internal/executor"
 	"github.com/ribeirogab/claude-code-monitor/internal/scheduler"
+	"github.com/ribeirogab/claude-code-monitor/internal/updater"
+)
+
+// AppVersion is set at build time via ldflags
+var AppVersion = "dev"
+
+const (
+	GitHubOwner = "ribeirogab"
+	GitHubRepo  = "claude-code-monitor"
 )
 
 type UsageData struct {
@@ -51,6 +60,8 @@ var (
 	outputDir         string
 	scriptPath        string
 	taskWithUpdate    func() error
+	appUpdater        *updater.Updater
+	mUpdateAvailable  *systray.MenuItem
 )
 
 func main() {
@@ -153,6 +164,43 @@ func onReady() {
 		item := mAutoUpdateMenu.AddSubMenuItemCheckbox(interval.label, "", isChecked)
 		intervalMenuItems[interval.seconds] = item
 	}
+
+	systray.AddSeparator()
+
+	// Add update available menu item (hidden by default)
+	mUpdateAvailable = systray.AddMenuItem("", "")
+	mUpdateAvailable.Hide()
+
+	// Initialize updater
+	appUpdater = updater.New(updater.Config{
+		Owner:          GitHubOwner,
+		Repo:           GitHubRepo,
+		CurrentVersion: AppVersion,
+		CheckInterval:  1 * time.Hour,
+	})
+
+	// Set callback for when update is found
+	appUpdater.OnUpdateFound = func(info *updater.UpdateInfo) {
+		if info.HasUpdate {
+			mUpdateAvailable.SetTitle(fmt.Sprintf("Update Available (v%s)", info.LatestVersion.String()))
+			mUpdateAvailable.Show()
+			log.Printf("Update available: %s -> %s", info.CurrentVersion.String(), info.LatestVersion.String())
+		}
+	}
+
+	// Start periodic update checks
+	appUpdater.StartPeriodicCheck()
+	log.Println("Updater started")
+
+	// Handle update available click
+	go func() {
+		for range mUpdateAvailable.ClickedCh {
+			log.Println("Opening releases page...")
+			if err := appUpdater.OpenLatestRelease(); err != nil {
+				log.Printf("Failed to open releases page: %v", err)
+			}
+		}
+	}()
 
 	systray.AddSeparator()
 
