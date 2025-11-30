@@ -17,23 +17,27 @@ import (
 )
 
 type UsageData struct {
-	SessionPercent  int    `json:"session_percent"`
-	SessionReset    string `json:"session_reset"`
-	WeekAllPercent  int    `json:"week_all_percent"`
-	WeekAllReset    string `json:"week_all_reset"`
-	WeekOpusPercent int    `json:"week_opus_percent"`
-	WeekOpusReset   string `json:"week_opus_reset"`
-	Timestamp       string `json:"timestamp"`
+	SessionPercent    int    `json:"session_percent"`
+	SessionReset      string `json:"session_reset"`
+	WeekAllPercent    int    `json:"week_all_percent"`
+	WeekAllReset      string `json:"week_all_reset"`
+	WeekOpusPercent   int    `json:"week_opus_percent"`
+	WeekOpusReset     string `json:"week_opus_reset"`
+	WeekSonnetPercent int    `json:"week_sonnet_percent"`
+	WeekSonnetReset   string `json:"week_sonnet_reset"`
+	Timestamp         string `json:"timestamp"`
 }
 
 type MenuItemRefs struct {
-	sessionPercent  *systray.MenuItem
-	sessionReset    *systray.MenuItem
-	weekAllPercent  *systray.MenuItem
-	weekAllReset    *systray.MenuItem
-	weekOpusPercent *systray.MenuItem
-	weekOpusReset   *systray.MenuItem
-	lastUpdate      *systray.MenuItem
+	sessionPercent    *systray.MenuItem
+	sessionReset      *systray.MenuItem
+	weekAllPercent    *systray.MenuItem
+	weekAllReset      *systray.MenuItem
+	weekOpusPercent   *systray.MenuItem
+	weekOpusReset     *systray.MenuItem
+	weekSonnetPercent *systray.MenuItem
+	weekSonnetReset   *systray.MenuItem
+	lastUpdate        *systray.MenuItem
 }
 
 var (
@@ -359,6 +363,10 @@ func hasOpusAccess(usage *UsageData) bool {
 	return usage.WeekOpusReset != ""
 }
 
+func hasSonnetAccess(usage *UsageData) bool {
+	return usage.WeekSonnetReset != ""
+}
+
 func formatTimestamp(timestamp string) string {
 	t, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
@@ -420,6 +428,14 @@ func updateMenuItems() {
 		menuRefs.weekOpusReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset)))
 	}
 
+	// Update Week (Sonnet) - only if menu items exist
+	if menuRefs.weekSonnetPercent != nil {
+		menuRefs.weekSonnetPercent.SetTitle(fmt.Sprintf("Week (Sonnet)\t  %02d%%  \t%s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent)))
+	}
+	if menuRefs.weekSonnetReset != nil {
+		menuRefs.weekSonnetReset.SetTitle(fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset)))
+	}
+
 	// Update Last update
 	if menuRefs.lastUpdate != nil {
 		menuRefs.lastUpdate.SetTitle(formatTimestamp(usage.Timestamp))
@@ -434,8 +450,9 @@ func createMenuItems() {
 	var sessionText, sessionResetText string
 	var weekAllText, weekAllResetText string
 	var weekOpusText, weekOpusResetText string
+	var weekSonnetText, weekSonnetResetText string
 	var lastUpdateText string
-	var showOpus bool
+	var showOpus, showSonnet bool
 
 	if err != nil {
 		sessionText = "Session    \tLoading..."
@@ -444,8 +461,11 @@ func createMenuItems() {
 		weekAllResetText = "resets: N/A"
 		weekOpusText = "Week (Opus)\tLoading..."
 		weekOpusResetText = "resets: N/A"
+		weekSonnetText = "Week (Sonnet)\tLoading..."
+		weekSonnetResetText = "resets: N/A"
 		lastUpdateText = "N/A"
-		showOpus = true
+		showOpus = false
+		showSonnet = true // Default to showing Sonnet for new users
 	} else {
 		sessionText = fmt.Sprintf("Session    \t  %02d%%  \t%s", usage.SessionPercent, getUsageEmoji(usage.SessionPercent))
 		sessionResetText = fmt.Sprintf("resets %s", removeTimezone(usage.SessionReset))
@@ -453,8 +473,11 @@ func createMenuItems() {
 		weekAllResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekAllReset))
 		weekOpusText = fmt.Sprintf("Week (Opus)\t  %02d%%  \t%s", usage.WeekOpusPercent, getUsageEmoji(usage.WeekOpusPercent))
 		weekOpusResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekOpusReset))
+		weekSonnetText = fmt.Sprintf("Week (Sonnet)\t  %02d%%  \t%s", usage.WeekSonnetPercent, getUsageEmoji(usage.WeekSonnetPercent))
+		weekSonnetResetText = fmt.Sprintf("resets %s", removeTimezone(usage.WeekSonnetReset))
 		lastUpdateText = formatTimestamp(usage.Timestamp)
 		showOpus = hasOpusAccess(usage)
+		showSonnet = hasSonnetAccess(usage)
 	}
 
 	// Session
@@ -469,11 +492,19 @@ func createMenuItems() {
 	menuRefs.weekAllReset.Disable()
 	systray.AddSeparator()
 
-	// Week (Opus) - only create if user has Opus access
+	// Week (Opus) - only create if user has Opus access (old format)
 	if showOpus {
 		menuRefs.weekOpusPercent = systray.AddMenuItem(weekOpusText, "")
 		menuRefs.weekOpusReset = systray.AddMenuItem(weekOpusResetText, "")
 		menuRefs.weekOpusReset.Disable()
+		systray.AddSeparator()
+	}
+
+	// Week (Sonnet) - only create if user has Sonnet access (new format)
+	if showSonnet {
+		menuRefs.weekSonnetPercent = systray.AddMenuItem(weekSonnetText, "")
+		menuRefs.weekSonnetReset = systray.AddMenuItem(weekSonnetResetText, "")
+		menuRefs.weekSonnetReset.Disable()
 		systray.AddSeparator()
 	}
 

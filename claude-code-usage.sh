@@ -174,19 +174,23 @@ if grep -q "Current session" "$OUTPUT_DIR/claude-code-usage.log"; then
     # Parse the data from the log
     log "Parsing usage data..."
 
-    # Extract percentages and reset times
-    SESSION_PERCENT=$(grep -A 1 "Current session" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*')
-    SESSION_RESET=$(grep -A 2 "Current session" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
+    # Extract percentages and reset times (use head -1 to get only first match due to terminal redraws)
+    SESSION_PERCENT=$(grep -A 1 "Current session" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*' | head -1)
+    SESSION_RESET=$(grep -A 2 "Current session" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | head -1 | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
 
-    WEEK_ALL_PERCENT=$(grep -A 1 "Current week (all models)" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*')
-    WEEK_ALL_RESET=$(grep -A 2 "Current week (all models)" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
+    WEEK_ALL_PERCENT=$(grep -A 1 "Current week (all models)" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*' | head -1)
+    WEEK_ALL_RESET=$(grep -A 2 "Current week (all models)" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | head -1 | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
 
-    WEEK_OPUS_PERCENT=$(grep -A 1 "Current week (Opus)" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*')
-    WEEK_OPUS_RESET=$(grep -A 2 "Current week (Opus)" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
+    # Try new format first (Sonnet only), then fallback to old format (Opus)
+    WEEK_SONNET_PERCENT=$(grep -A 1 "Current week (Sonnet" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*' | head -1)
+    WEEK_SONNET_RESET=$(grep -A 2 "Current week (Sonnet" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | head -1 | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
+
+    WEEK_OPUS_PERCENT=$(grep -A 1 "Current week (Opus)" "$OUTPUT_DIR/claude-code-usage.log" | grep "used" | grep -o '[0-9]*% used' | grep -o '[0-9]*' | head -1)
+    WEEK_OPUS_RESET=$(grep -A 2 "Current week (Opus)" "$OUTPUT_DIR/claude-code-usage.log" | grep "Resets" | head -1 | sed 's/.*Resets\s*\(.*\)/\1/' | sed 's/\[38;[0-9;]*m//g' | sed 's/\[39m//g' | sed 's/\[22m//g' | sed 's/\[1m//g' | sed 's/\x1b//g' | tr -d '\r' | xargs)
 
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-    # Create JSON file
+    # Create JSON file with both Opus and Sonnet fields for backwards compatibility
     log "Creating JSON output..."
     cat > "$OUTPUT_DIR/claude-code-usage.json" <<EOF
 {
@@ -196,6 +200,8 @@ if grep -q "Current session" "$OUTPUT_DIR/claude-code-usage.log"; then
   "week_all_reset": "${WEEK_ALL_RESET}",
   "week_opus_percent": ${WEEK_OPUS_PERCENT:-0},
   "week_opus_reset": "${WEEK_OPUS_RESET}",
+  "week_sonnet_percent": ${WEEK_SONNET_PERCENT:-0},
+  "week_sonnet_reset": "${WEEK_SONNET_RESET}",
   "timestamp": "${TIMESTAMP}"
 }
 EOF
@@ -209,7 +215,12 @@ EOF
     echo "========================================="
     echo "Session:        ${SESSION_PERCENT}% (resets ${SESSION_RESET})"
     echo "Week (All):     ${WEEK_ALL_PERCENT}% (resets ${WEEK_ALL_RESET})"
-    echo "Week (Opus):    ${WEEK_OPUS_PERCENT}% (resets ${WEEK_OPUS_RESET})"
+    if [ -n "$WEEK_SONNET_PERCENT" ]; then
+        echo "Week (Sonnet):  ${WEEK_SONNET_PERCENT}% (resets ${WEEK_SONNET_RESET})"
+    fi
+    if [ -n "$WEEK_OPUS_PERCENT" ]; then
+        echo "Week (Opus):    ${WEEK_OPUS_PERCENT}% (resets ${WEEK_OPUS_RESET})"
+    fi
     echo "========================================="
     echo ""
     echo "Files created in $OUTPUT_DIR:"
