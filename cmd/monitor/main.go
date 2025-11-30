@@ -351,7 +351,7 @@ func loadIcon() ([]byte, error) {
 
 func updateIcon(sessionPercent int) {
 	var iconName string
-	sessionPercent = 90 // TODO: REMOVER - teste hardcoded
+
 	if sessionPercent > 85 {
 		iconName = "menubar-icon-red"
 	} else if sessionPercent > 50 {
