@@ -182,7 +182,7 @@ func onReady() {
 	// Set callback for when update is found
 	appUpdater.OnUpdateFound = func(info *updater.UpdateInfo) {
 		if info.HasUpdate {
-			mUpdateAvailable.SetTitle(fmt.Sprintf("Update Available (v%s)", info.LatestVersion.String()))
+			mUpdateAvailable.SetTitle(fmt.Sprintf("Update Available (%s)", info.LatestVersion.String()))
 			mUpdateAvailable.Show()
 			log.Printf("Update available: %s -> %s", info.CurrentVersion.String(), info.LatestVersion.String())
 		}
