@@ -153,11 +153,15 @@ Note: Cross-compilation requires CGO toolchains. Use `make app` to build for cur
 The app uses two types of visual indicators:
 
 **Menu Bar Icon** (changes based on session usage):
-- Green icon (0-50%): Safe usage level
-- Yellow icon (51-85%): Moderate usage
-- Red icon (86-100%): High usage, approaching limit
+
+| Usage Level | Icon | Description |
+|-------------|------|-------------|
+| 0-50% | ![Green](assets/icons/menubar-icon.png) | Safe usage level |
+| 51-85% | ![Yellow](assets/icons/menubar-icon-yellow.png) | Moderate usage |
+| 86-100% | ![Red](assets/icons/menubar-icon-red.png) | High usage, approaching limit |
 
 **Menu Emojis** (shown next to each percentage):
+
 - 🟢 Green (0-50%): Safe usage level
 - 🟡 Yellow (51-85%): Moderate usage
 - 🔴 Red (86-100%): High usage, approaching limit
