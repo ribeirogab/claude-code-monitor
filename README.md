@@ -53,7 +53,7 @@ Note: The app will automatically install `jq` and `expect` via Homebrew if not f
 
 **Installation Steps:**
 
-1. Download `ClaudeCodeMonitor-1.1.0.dmg` from releases
+1. Download `ClaudeCodeMonitor-1.1.1.dmg` from releases
 2. Double-click the DMG file to open it
 3. Drag `ClaudeCodeMonitor.app` to the Applications folder
 4. Eject the DMG
@@ -87,7 +87,7 @@ cd claude-code-monitor
 make dmg-universal
 ```
 
-This creates `dist/ClaudeCodeMonitor-1.1.0.dmg` with a universal binary (Intel + Apple Silicon).
+This creates `dist/ClaudeCodeMonitor-1.1.1.dmg` with a universal binary (Intel + Apple Silicon).
 
 #### Generate .app Bundle Only
 
