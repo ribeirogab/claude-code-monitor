@@ -318,19 +318,19 @@ func findScriptPath() string {
 	return ""
 }
 
-func loadIcon() ([]byte, error) {
+func loadIconByName(iconName string) ([]byte, error) {
 	// Try multiple paths for icon (dev mode and app bundle)
 	paths := []string{
-		"assets/icons/menubar-icon.png",
-		"../Resources/assets/icons/menubar-icon.png",
+		fmt.Sprintf("assets/icons/%s.png", iconName),
+		fmt.Sprintf("../Resources/assets/icons/%s.png", iconName),
 	}
 
 	// Add path relative to executable
 	if exe, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exe)
 		paths = append(paths,
-			filepath.Join(exeDir, "..", "Resources", "assets", "icons", "menubar-icon.png"),
-			filepath.Join(exeDir, "assets", "icons", "menubar-icon.png"),
+			filepath.Join(exeDir, "..", "Resources", "assets", "icons", fmt.Sprintf("%s.png", iconName)),
+			filepath.Join(exeDir, "assets", "icons", fmt.Sprintf("%s.png", iconName)),
 		)
 	}
 
@@ -342,7 +342,32 @@ func loadIcon() ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("icon file not found in any expected location")
+	return nil, fmt.Errorf("icon %s not found in any expected location", iconName)
+}
+
+func loadIcon() ([]byte, error) {
+	return loadIconByName("menubar-icon")
+}
+
+func updateIcon(sessionPercent int) {
+	var iconName string
+	sessionPercent = 90 // TODO: REMOVER - teste hardcoded
+	if sessionPercent > 85 {
+		iconName = "menubar-icon-red"
+	} else if sessionPercent > 50 {
+		iconName = "menubar-icon-yellow"
+	} else {
+		iconName = "menubar-icon"
+	}
+
+	iconData, err := loadIconByName(iconName)
+	if err != nil {
+		log.Printf("Failed to load icon %s: %v", iconName, err)
+		return
+	}
+
+	systray.SetIcon(iconData)
+	log.Printf("Icon updated to: %s (session: %d%%)", iconName, sessionPercent)
 }
 
 func loadUsageData() (*UsageData, error) {
@@ -403,6 +428,9 @@ func updateMenuItems() {
 	if menuRefs == nil {
 		return
 	}
+
+	// Update icon based on session usage
+	updateIcon(usage.SessionPercent)
 
 	// Update Session
 	if menuRefs.sessionPercent != nil {
