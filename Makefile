@@ -5,7 +5,7 @@ BUILD_DIR := build
 DIST_DIR := dist
 CMD_DIR := cmd/monitor
 BUNDLE_NAME := ClaudeCodeMonitor.app
-VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION := $(shell /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" assets/Info.plist 2>/dev/null || echo "dev")
 LDFLAGS := -X main.AppVersion=$(VERSION)
 
 help:
